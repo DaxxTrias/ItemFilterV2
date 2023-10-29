@@ -8,7 +8,7 @@ using SharpDX;
 using System.Linq;
 using System.Linq.Dynamic.Core.Exceptions;
 
-namespace PickIt;
+namespace ItemFilterLibrary;
 
 public class ItemFilterData
 {

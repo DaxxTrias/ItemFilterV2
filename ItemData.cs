@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PickIt;
+namespace ItemFilterLibrary;
 
 public class ItemData
 {

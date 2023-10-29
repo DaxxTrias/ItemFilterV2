@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using ExileCore.Shared.Enums;
 
-namespace PickIt;
+namespace ItemFilterLibrary;
 
 public sealed class CustomDynamicLinqCustomTypeProvider :
     AbstractDynamicLinqCustomTypeProvider,

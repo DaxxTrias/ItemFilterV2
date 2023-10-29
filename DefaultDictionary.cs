@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace PickIt;
+namespace ItemFilterLibrary;
 
 public class DefaultDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
 {
