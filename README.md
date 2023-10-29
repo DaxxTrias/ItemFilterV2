@@ -53,7 +53,7 @@
 | AttributeRequirements    | AttributeRequirementsData     | Information about the attribute requirements.  ||
 | ArmourInfo               | ArmourData                    | Information about the armor.                   ||
 | ModsInfo                 | ModsData                      | Information about the mods.                    ||
-| LocalStats               | Dictionary<GameStat, int>     | The local statistics of the item.              ||
+| LocalStats               | Dictionary<GameStat, int>     | The local stats of the item.              ||
 | FindMods                 | List<ItemMod>                 | Finds the mods of the specified type.          ||
 | ModStats                 | IReadOnlyDictionary<GameStat, int> | Provides the summarized statistics of the mods.   |ModStats("ChaosResistImplicitBoots", "xddchatting")[GameStat.BaseChaosDamageResistancePct]>0|
 | ItemStats                | IReadOnlyDictionary<GameStat, int> | Provides the summarized statistics of the item.  ||
