@@ -39,6 +39,11 @@ public class ItemFilter
         return new ItemFilter(GetQueries(filterFilePath, File.ReadAllLines(filterFilePath)));
     }
 
+    public static ItemFilter Load(string filterName, List<string> list)
+    {
+        return new ItemFilter(GetQueries(filterName, list));
+    }
+
     public static ItemFilter FromString(string @string)
     {
         return new ItemFilter(GetQueries("memory", @string.ReplaceLineEndings("\n").Split("\n")));
@@ -85,6 +90,38 @@ public class ItemFilter
                     RawQuery = rawQuery,
                     CompiledQuery = compiledLambda,
                     InitialLine = initialLine
+                });
+            }
+            catch (Exception ex)
+            {
+                var exMessage = ex is ParseException parseEx
+                    ? $"{parseEx.Message} (at index {parseEx.Position})"
+                    : ex.ToString();
+                DebugWindow.LogError($"[ItemQueryProcessor] Error processing query ({query}) from List Item # {initialLine}: {exMessage}", 15);
+            }
+        }
+
+        DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterFilePath.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2, Color.Orange);
+        return compiledQueries;
+    }
+
+    private static List<ItemFilterData> GetQueries(string filterFilePath, List<string> queryList)
+    {
+        var compiledQueries = new List<ItemFilterData>();
+
+        for (int i = 0; i < queryList.Count; i++)
+        {
+            string query = queryList[i];
+            try
+            {
+                var lambda = ParseItemDataLambda(query);
+                var compiledLambda = lambda.Compile();
+                compiledQueries.Add(new ItemFilterData
+                {
+                    Query = query,
+                    RawQuery = query,
+                    CompiledQuery = compiledLambda,
+                    InitialLine = i +1
                 });
             }
             catch (Exception ex)
