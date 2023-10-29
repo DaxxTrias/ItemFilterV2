@@ -6,6 +6,7 @@ using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace ItemFilterLibrary;
 
@@ -79,18 +80,30 @@ public class ItemData
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
     public int AttemptedPickups = 0;
+    public Vector2 CachedClickPosition { get; set; } = new Vector2(0, 0);
 
     public ItemData(LabelOnGround queriedItem, FilesContainer fs) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem)
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, new Vector2(0, 0))
     {
     }
 
-    public ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround)
+    public ItemData(LabelOnGround queriedItem, FilesContainer fs, Vector2 cachedclickPos) :
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, cachedclickPos)
+    {
+    }
+
+    public ItemData(Entity queriedItem, FilesContainer fs) :
+        this(queriedItem, fs, null, new Vector2(0,0))
+    {
+    }
+
+    public ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos)
     {
         if (itemEntity == null) return;
         var item = itemEntity;
 
         LabelOnGround = itemLabelOnGround;
+        CachedClickPosition = cachedclickPos;
         Entity = itemEntity;
         Path = item.Path;
         Id = item.Id;

@@ -129,7 +129,7 @@ public class ItemFilter
                 var exMessage = ex is ParseException parseEx
                     ? $"{parseEx.Message} (at index {parseEx.Position})"
                     : ex.ToString();
-                DebugWindow.LogError($"[ItemQueryProcessor] Error processing query ({query.Replace("\n", "")}) on Line # {initialLine}: {exMessage}", 15);
+                DebugWindow.LogError($"[ItemQueryProcessor] Error processing query ({query.Replace("\n", "")}) on Line # {i + 1}: {exMessage}", 15);
             }
         }
 
