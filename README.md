@@ -69,7 +69,7 @@
 | MaxLevel     | int                 | The maximum level of the skill gem.|
 | QualityType  | SkillGemQualityTypeE | The type of quality for the skill gem.|
 
-### StackData
+### StackInfo
 
 | Property     | Type  | Description             |
 |--------------|-------|-------------------------|
