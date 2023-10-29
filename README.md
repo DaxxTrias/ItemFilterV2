@@ -40,6 +40,8 @@
 | IsElderGuardianMap       | bool                          | Specifies if the item is an Elder Guardian map.||
 | Enchanted                | bool                          | Specifies if the item is enchanted.            ||
 | HasMods                  | bool                          | Checks if the item has the specified mods.     |HasMods(new string[] { "MetamorphosisItemisedBossRewards" }) // Metamorph Organ|
+| ContainsString           | bool                          | returns true if any string is found in the input string| ContainsString(BaseName, new []{"boot","quiver"})|
+| DoesNotContainString     | bool                          | returns true if any string is not found in the input string| DoesNotContainString(BaseName, new []{"boot","quiver"})|
 | InfluenceFlags           | Influence                     | Flags representing different types of influence.||
 | Rarity                   | ItemRarity                    | The rarity of the item.                        ||
 | ModsNames                | List<string>                  | The list of names of the mods of the item.     ||

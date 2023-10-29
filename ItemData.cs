@@ -267,12 +267,9 @@ public class ItemData
         return SumModStats(ModsInfo.ItemMods.Join(wantedMods, x => x.Name, x => x.Key, (mod, w) => (mod, w.Value), StringComparer.OrdinalIgnoreCase));
     }
 
-    public bool HasMods(params string[] wantedMods)
-    {
-        return ModsInfo.ItemMods != null &&
+    public bool HasMods(params string[] wantedMods) => ModsInfo.ItemMods != null &&
                ModsInfo.ItemMods.IntersectBy(wantedMods, x => x.Name, StringComparer.OrdinalIgnoreCase)
                    .Count() == wantedMods.Length;
-    }
 
     public static IReadOnlyDictionary<GameStat, int> SumModStats(IEnumerable<ItemMod> mods)
     {
@@ -296,9 +293,9 @@ public class ItemData
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
+    public static bool ContainsString(string searchString, string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => searchString.ToLower().Contains(s));
+    public static bool DoesNotContainString(string searchString, string[] wantedStrings) => !wantedStrings.Select(s => s.ToLower()).Any(s => searchString.ToLower().Contains(s));
 
-    public override string ToString()
-    {
-        return $"{BaseName} ({ClassName}) Dist: {Distance}";
-    }
+
+    public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
 }
