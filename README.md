@@ -84,7 +84,7 @@
 | Max      | int  | The maximum charge count.         |
 | PerUse   | int  | The charge count per use.         |
 
-### SocketData
+### SocketInfo
 
 | Property        | Type                      | Description                         |
 |-----------------|---------------------------|-------------------------------------|
