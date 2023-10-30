@@ -310,6 +310,7 @@ public class ItemData
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
     public bool ContainsString(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => @string.ToLower().Contains(s));
+    public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
 
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
 }
