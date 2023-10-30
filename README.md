@@ -41,7 +41,7 @@
 | Enchanted                | bool                          | Specifies if the item is enchanted.            ||
 | HasMods                  | bool                          | Checks if the item has the specified mods.     |HasMods(new string[] { "MetamorphosisItemisedBossRewards" }) // Metamorph Organ|
 | ContainsString           | bool                          | returns true if any string is found in the input string, case insensitive| ContainsString(BaseName, new []{"bOOt","quiVer"})|
-| ContainsStringCase       | bool                          | returns true if any string is found in the input string, case sensitive|| ContainsStringCase(BaseName, new []{"Boot","Quiver"})|
+| ContainsStringCase       | bool                          | returns true if any string is found in the input string, case sensitive| ContainsStringCase(BaseName, new []{"Boot","Quiver"})|
 | InfluenceFlags           | Influence                     | Flags representing different types of influence.||
 | Rarity                   | ItemRarity                    | The rarity of the item.                        ||
 | ModsNames                | List<string>                  | The list of names of the mods of the item.     ||
