@@ -57,13 +57,19 @@ public class ItemFilter
 
     public bool Matches(ItemData item)
     {
+        return Matches(item, false);
+    }
+    public bool Matches(ItemData item, bool supressMessage)
+    {
         foreach (var cachedQuery in _queries)
         {
             try
             {
                 if (!cachedQuery.FailedToCompile && cachedQuery.CompiledQuery(item))
                 {
-                    DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {cachedQuery.InitialLine}\nItem({item.BaseName})\n{cachedQuery.Query.Replace("\n", "")}", 10, Color.LawnGreen);
+                    if (!supressMessage)
+                        DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {cachedQuery.InitialLine}\nItem({item.BaseName})\n{cachedQuery.Query.Replace("\n", "")}", 10, Color.LawnGreen);
+
                     return true; // Stop further checks once a match is found
                 }
             }
