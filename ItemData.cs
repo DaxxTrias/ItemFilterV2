@@ -5,6 +5,7 @@ using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 
@@ -77,32 +78,44 @@ public class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public string ResourcePath { get; } = string.Empty;
+    public RectangleF ClientRectangleCache { get; } = new RectangleF(0, 0, 0, 0);
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
     public int AttemptedPickups = 0;
     public Vector2 CachedClickPosition { get; set; } = new Vector2(0, 0);
 
     public ItemData(LabelOnGround queriedItem, FilesContainer fs) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, new Vector2(0, 0))
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, new Vector2(0, 0), new RectangleF(0,0,0,0))
     {
     }
 
     public ItemData(LabelOnGround queriedItem, FilesContainer fs, Vector2 cachedclickPos) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, cachedclickPos)
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, cachedclickPos, new RectangleF(0, 0, 0, 0))
     {
     }
 
     public ItemData(Entity queriedItem, FilesContainer fs) :
-        this(queriedItem, fs, null, new Vector2(0,0))
+        this(queriedItem, fs, null, new Vector2(0, 0), new RectangleF(0, 0, 0, 0))
     {
     }
 
-    public ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos)
+    public ItemData(Entity queriedItem, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos) :
+        this(queriedItem, fs, itemLabelOnGround, cachedclickPos, new RectangleF(0, 0, 0, 0))
+    {
+    }
+
+    public ItemData(Entity queriedItem, FilesContainer fs, RectangleF rectangleCache) :
+        this(queriedItem, fs, null, new Vector2(0, 0), rectangleCache)
+    {
+    }
+
+    public ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos, RectangleF rectangleCache)
     {
         if (itemEntity == null) return;
         var item = itemEntity;
 
         LabelOnGround = itemLabelOnGround;
+        ClientRectangleCache = rectangleCache;
         CachedClickPosition = cachedclickPos;
         Entity = itemEntity;
         Path = item.Path;
