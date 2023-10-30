@@ -5,9 +5,7 @@ using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Numerics;
 
 namespace ItemFilterLibrary;
 
@@ -78,45 +76,24 @@ public class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public string ResourcePath { get; } = string.Empty;
-    public SharpDX.RectangleF ClientRectangleCache { get; } = new SharpDX.RectangleF(0, 0, 0, 0);
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
-    public int AttemptedPickups = 0;
-    public Vector2 CachedClickPosition { get; set; } = new Vector2(0, 0);
-
     public ItemData(LabelOnGround queriedItem, FilesContainer fs) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, new Vector2(0, 0), new SharpDX.RectangleF(0,0,0,0))
-    {
-    }
-
-    public ItemData(LabelOnGround queriedItem, FilesContainer fs, Vector2 cachedclickPos) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem, cachedclickPos, new SharpDX.RectangleF(0, 0, 0, 0))
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem)
     {
     }
 
     public ItemData(Entity queriedItem, FilesContainer fs) :
-        this(queriedItem, fs, null, new Vector2(0, 0), new SharpDX.RectangleF(0, 0, 0, 0))
+        this(queriedItem, fs, null)
     {
     }
 
-    public ItemData(Entity queriedItem, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos) :
-        this(queriedItem, fs, itemLabelOnGround, cachedclickPos, new SharpDX.RectangleF(0, 0, 0, 0))
-    {
-    }
-
-    public ItemData(Entity queriedItem, FilesContainer fs, SharpDX.RectangleF rectangleCache) :
-        this(queriedItem, fs, null, new Vector2(0, 0), rectangleCache)
-    {
-    }
-
-    public ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround, Vector2 cachedclickPos, SharpDX.RectangleF rectangleCache)
+    private ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround)
     {
         if (itemEntity == null) return;
         var item = itemEntity;
 
         LabelOnGround = itemLabelOnGround;
-        ClientRectangleCache = rectangleCache;
-        CachedClickPosition = cachedclickPos;
         Entity = itemEntity;
         Path = item.Path;
         Id = item.Id;
@@ -237,9 +214,6 @@ public class ItemData
         {
             ShieldBlockChance = shieldComp.ChanceToBlock;
         }
-
-        // Reserving as using VS for linq making is easier.
-        var test = (ArmourInfo.Evasion + ArmourInfo.ES) >= 900;
     }
 
     public bool HasUnorderedSocketGroup(string groupText) =>
