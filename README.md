@@ -58,7 +58,7 @@
 | LocalStats               | Dictionary<GameStat, int>     | The local stats of the item.              ||
 | FindMods                 | List<ItemMod>                 | Finds the mods of the specified type.          ||
 | ModStats                 | IReadOnlyDictionary<GameStat, int> | Provides the summarized statistics of the mods.   |ModStats("ChaosResistImplicitBoots", "xddchatting")[GameStat.BaseChaosDamageResistancePct]>0|
-| ItemStats                | IReadOnlyDictionary<GameStat, int> | Provides the summarized statistics of the item.  ||
+| ItemStats                | IReadOnlyDictionary<GameStat, int> | Provides the summarized statistics of the item.  |ItemStats[GameStat.BaseMovementVelocityPct]>=10 // 10% ms|
 | ModWeightedStatSum       | IReadOnlyDictionary<GameStat, float> | Provides the weighted summarized statistics of the mods. ||
 | SumModStats              | IReadOnlyDictionary<GameStat, int> | Summarizes the statistics of the mods.            ||
 | SumModStats              | IReadOnlyDictionary<GameStat, float> | Summarizes the statistics of the mods with weights. ||
