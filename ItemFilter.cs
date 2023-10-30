@@ -187,7 +187,7 @@ public class ItemFilter
             var lambda = ParseItemDataLambda(query);
             var compiledLambda = lambda.Compile();
 
-            DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {query} from Line # {line}.", 2, Color.Orange);
+            //DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {query} from Line # {line}.", 2, Color.Orange);
 
             return new ItemFilterData
             {
