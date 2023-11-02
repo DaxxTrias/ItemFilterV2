@@ -191,7 +191,15 @@ public class ItemFilter
                     : line;
                 if (section == null)
                 {
-                    sectionStartLine = index + 1; // Set at the start of each section
+                    if (!string.IsNullOrWhiteSpace(lineWithoutComment))
+                    {
+                        sectionStartLine = index + 1; // Set at the start of each section
+                    }
+                    else
+                    {
+                        //skip comment lines at the beginning of a section
+                        continue;
+                    }
                 }
 
                 section += $"{lineWithoutComment}\n";
