@@ -1,5 +1,4 @@
 ﻿using ExileCore;
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +23,10 @@ public class ItemQuery
     public Func<ItemData, bool> CompiledQuery { get; set; }
     public int InitialLine { get; set; }
     public bool FailedToCompile { get; set; } = false;
+    public override string ToString()
+    {
+        return $"InitialLine({InitialLine}) Query({Query.Replace("\n", "")}) RawQuery({RawQuery.Replace("\n", "")}) Failed?({FailedToCompile})";
+    }
 
     public bool Matches(ItemData item)
     {
