@@ -106,9 +106,16 @@ public class ItemQuery
 
 public class ItemFilter
 {
-    private readonly List<ItemQuery> _queries;
+    private readonly List<(ItemQuery Query, bool IsNegative)> _queries;
+
+    public IReadOnlyCollection<(ItemQuery Query, bool IsNegative)> Queries => _queries;
 
     public ItemFilter(List<ItemQuery> queries)
+    {
+        _queries = queries.Select(x=>(x, false)).ToList();
+    }
+    
+    public ItemFilter(List<(ItemQuery, bool isNegative)> queries)
     {
         _queries = queries;
     }
@@ -138,49 +145,50 @@ public class ItemFilter
 
     public bool Matches(ItemData item, bool enableDebug)
     {
-        foreach (var cachedQuery in _queries)
+        foreach (var (query, isNegative) in _queries)
         {
             try
             {
-                if (!cachedQuery.FailedToCompile && cachedQuery.CompiledQuery(item))
+                if (!query.FailedToCompile && query.CompiledQuery(item))
                 {
                     if (enableDebug)
-                        DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {cachedQuery.InitialLine}\nItem({item.BaseName})\n{cachedQuery.RawQuery}", 10);
+                        DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {query.InitialLine}\nItem({item.BaseName})\n{query.RawQuery}", 10);
 
-                    return true;
+                    return !isNegative;
                 }
             }
             catch (Exception ex)
             {
                 // huge issue when the amount of catching starts creeping up
                 // 4500 lines that produce an error on one item take 50ms per Tick() vs handling the error taking 0.2ms
-                DebugWindow.LogError($"Evaluation Error! Line # {cachedQuery.InitialLine} Entry: '{cachedQuery.RawQuery}' Item {item.BaseName}\n{ex}");
+                DebugWindow.LogError($"Evaluation Error! Line # {query.InitialLine} Entry: '{query.RawQuery}' Item {item.BaseName}\n{ex}");
             }
         }
 
         return false;
     }
 
-    private static List<ItemQuery> GetQueries(string filterFilePath, string[] rawLines)
+    private static List<(ItemQuery, bool isNegative)> GetQueries(string filterFilePath, string[] rawLines)
     {
-        var compiledQueries = new List<ItemQuery>();
+        var compiledQueries = new List<(ItemQuery, bool isNegative)>();
         var lines = SplitQueries(rawLines);
 
-        foreach (var (query, rawQuery, initialLine) in lines)
+        foreach (var (query, rawQuery, initialLine, isNegative) in lines)
         {
-            compiledQueries.Add(ItemQuery.Load(query, rawQuery, initialLine));
+            compiledQueries.Add((ItemQuery.Load(query, rawQuery, initialLine), isNegative));
         }
 
         DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterFilePath.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
         return compiledQueries;
     }
 
-    private static List<(string section, string rawSection, int sectionStartLine)> SplitQueries(string[] rawLines)
+    private static List<(string section, string rawSection, int sectionStartLine, bool isNegative)> SplitQueries(string[] rawLines)
     {
         string section = null;
         string rawSection = null;
+        bool isNegative = false;
         var sectionStartLine = 0;
-        var lines = new List<(string section, string rawSection, int sectionStartLine)>();
+        var lines = new List<(string section, string, int sectionStartLine, bool isNegative)>();
 
         foreach (var (line, index) in rawLines.Append("").Select((value, i) => (value, i)))
         {
@@ -189,11 +197,17 @@ public class ItemFilter
                 var lineWithoutComment = line.IndexOf("//", StringComparison.Ordinal) is var commentIndex and not -1
                     ? line[..commentIndex]
                     : line;
+                lineWithoutComment = lineWithoutComment.Trim();
                 if (section == null)
                 {
                     if (!string.IsNullOrWhiteSpace(lineWithoutComment))
                     {
                         sectionStartLine = index + 1; // Set at the start of each section
+                        if (lineWithoutComment[0] == '^')
+                        {
+                            lineWithoutComment=lineWithoutComment[1..];
+                            isNegative = true;
+                        }
                     }
                     else
                     {
@@ -209,11 +223,12 @@ public class ItemFilter
             {
                 if (!string.IsNullOrWhiteSpace(section))
                 {
-                    lines.Add((section, rawSection.TrimEnd('\n'), sectionStartLine));
+                    lines.Add((section, rawSection.TrimEnd('\n'), sectionStartLine, isNegative));
                 }
 
                 section = null;
                 rawSection = null;
+                isNegative = false;
             }
         }
 
