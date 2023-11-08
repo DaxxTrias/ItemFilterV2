@@ -58,6 +58,8 @@ public class ItemData
     public bool Enchanted { get; } = false;
     public ItemRarity Rarity { get; } = ItemRarity.Normal;
     public List<string> ModsNames { get; } = new List<string>();
+    public List<string> PathTags { get; } = new List<string>();
+    public List<string> Tags { get; } = new List<string>();
     public LabelOnGround LabelOnGround { get; } = null;
     public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, SkillGemQualityTypeE.Superior);
     public uint InventoryId { get; }
@@ -106,6 +108,8 @@ public class ItemData
             BaseName = baseItemType.BaseName;
             Width = baseItemType.Width;
             Height = baseItemType.Height;
+            PathTags = baseItemType.MoreTagsFromPath.ToList();
+            Tags = baseItemType.Tags.ToList();
         }
 
         if (item.TryGetComponent<Quality>(out var quality))
@@ -295,6 +299,9 @@ public class ItemData
 
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
+
+    public bool HasTag(List<string> tags, string wantedTag) => tags.Select(s => s.ToLower()).Any(s => wantedTag.ToLower().Contains(s));
+    public bool HasTagCase(List<string> tags, string wantedTag) => tags.Select(s => s).Any(s => wantedTag.Contains(s));
 
     public bool ContainsString(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => @string.ToLower().Contains(s));
     public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
