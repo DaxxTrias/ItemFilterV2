@@ -300,6 +300,9 @@ public class ItemData
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
+    public bool HasTag(string wantedTag) => Tags.Concat(PathTags).Select(s => s.ToLower()).Any(s => wantedTag.ToLower().Contains(s));
+    public bool HasTagCase(string wantedTag) => Tags.Concat(PathTags).Select(s => s).Any(s => wantedTag.Contains(s));
+
     public bool HasTag(List<string> tags, string wantedTag) => tags.Select(s => s.ToLower()).Any(s => wantedTag.ToLower().Contains(s));
     public bool HasTagCase(List<string> tags, string wantedTag) => tags.Select(s => s).Any(s => wantedTag.Contains(s));
 
