@@ -74,6 +74,7 @@ public class ItemData
     public float Distance => LabelOnGround.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
     public StackData StackInfo { get; } = new StackData(0, 0);
     public Entity Entity { get; }
+    public GameController GameController { get; }
     public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>());
     public ChargesData ChargeInfo { get; } = new ChargesData(0, 0, 0);
     public FlaskData FlaskInfo { get; } = new FlaskData(0, 0, new Dictionary<GameStat, int>());
@@ -101,6 +102,7 @@ public class ItemData
 
         LabelOnGround = itemLabelOnGround;
         Entity = itemEntity;
+        GameController = gc;
         Path = item.Path;
         Id = item.Id;
         InventoryId = item.InventoryId;
