@@ -25,6 +25,8 @@ public class ItemData
 
     public record ArmourData(int Armour, int Evasion, int ES);
 
+    public record AreaData(int Level, string Name, int Act, bool IsEndGame);
+
     public record ModsData(List<ItemMod> ItemMods, List<ItemMod> EnchantedMods, List<ItemMod> ExplicitMods, List<ItemMod> FracturedMods, List<ItemMod> ImplicitMods, List<ItemMod> ScourgeMods, List<ItemMod> SynthesisMods, List<ItemMod> CrucibleMods);
 
     public string Path { get; } = string.Empty;
@@ -77,6 +79,7 @@ public class ItemData
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
+    public AreaData AreaInfo { get; set; } = new AreaData(0, "N/A", 0, false); // This is for devs to populate themselves.
     public string ResourcePath { get; } = string.Empty;
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
