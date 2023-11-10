@@ -1,3 +1,4 @@
+using ExileCore;
 using ExileCore.PoEMemory;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
@@ -79,21 +80,21 @@ public class ItemData
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
-    public AreaData AreaInfo { get; set; } = new AreaData(0, "N/A", 0, false); // This is for devs to populate themselves.
+    public AreaData AreaInfo { get; set; } = new AreaData(0, "N/A", 0, false);
     public string ResourcePath { get; } = string.Empty;
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
-    public ItemData(LabelOnGround queriedItem, FilesContainer fs) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, fs, queriedItem)
+    public ItemData(LabelOnGround queriedItem, GameController gc) :
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
     {
     }
 
-    public ItemData(Entity queriedItem, FilesContainer fs) :
-        this(queriedItem, fs, null)
+    public ItemData(Entity queriedItem, GameController gc) :
+        this(queriedItem, gc, null)
     {
     }
 
-    private ItemData(Entity itemEntity, FilesContainer fs, LabelOnGround itemLabelOnGround)
+    private ItemData(Entity itemEntity, GameController gc, LabelOnGround itemLabelOnGround)
     {
         if (itemEntity == null) return;
         var item = itemEntity;
@@ -104,7 +105,7 @@ public class ItemData
         Id = item.Id;
         InventoryId = item.InventoryId;
 
-        var baseItemType = fs.BaseItemTypes.Translate(Path);
+        var baseItemType = gc.Files.BaseItemTypes.Translate(Path);
         if (baseItemType != null)
         {
             ClassName = baseItemType.ClassName;
@@ -113,6 +114,12 @@ public class ItemData
             Height = baseItemType.Height;
             PathTags = baseItemType.MoreTagsFromPath.ToList();
             Tags = baseItemType.Tags.ToList();
+        }
+
+        var curArea = gc.Area.CurrentArea;
+        if (curArea != null)
+        {
+            AreaInfo = new AreaData(curArea.RealLevel, curArea.Name, curArea.Act, curArea.Act > 10);
         }
 
         if (item.TryGetComponent<Quality>(out var quality))
