@@ -1,19 +1,19 @@
 using ExileCore;
-using ExileCore.PoEMemory;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
 using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using static ItemFilterLibrary.ItemData;
+using System.Runtime.CompilerServices;
+using ExileCore.Shared.Cache;
 
 namespace ItemFilterLibrary;
 
 public class ItemData
 {
+    private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
     public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType);
 
     public record StackData(int Count, int MaxCount);
@@ -85,10 +85,14 @@ public class ItemData
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
-    public AreaData AreaInfo { get; set; } = new AreaData(0, "N/A", 0, false);
-    public PlayerData PlayerInfo { get; set; } = new PlayerData(0, 0, 0, 0);
+    public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
+
+    public PlayerData PlayerInfo => GameController != null
+        ? PlayerDataCache.GetValue(GameController, gc => new FrameCache<PlayerData>(() => CreatePlayerData(gc)))!.Value
+        : new PlayerData(0, 0, 0, 0);
+
     public string ResourcePath { get; } = string.Empty;
-    public bool WasDynamiclyUpdated { get; set; } = false;
+    public bool WasDynamiclyUpdated => true;
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
     public ItemData(LabelOnGround queriedItem, GameController gc) :
         this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
@@ -111,11 +115,6 @@ public class ItemData
         Path = item.Path;
         Id = item.Id;
         InventoryId = item.InventoryId;
-
-        if (GameController.Player.TryGetComponent<Player>(out var playerComp))
-        {
-            PlayerInfo = new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence);
-        }
 
         var baseItemType = gc.Files.BaseItemTypes.Translate(Path);
         if (baseItemType != null)
@@ -242,6 +241,13 @@ public class ItemData
         }
     }
 
+    private static PlayerData CreatePlayerData(GameController gameController)
+    {
+        return gameController.Player.TryGetComponent<Player>(out var playerComp) 
+            ? new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence) 
+            : new PlayerData(0, 0, 0, 0);
+    }
+
     public bool HasUnorderedSocketGroup(string groupText) =>
         SocketInfo.SocketGroups.Any(x =>
             x.ToLookup(char.ToLowerInvariant) is var lookup &&
@@ -339,14 +345,6 @@ public static class ItemExtensions
 {
     public static void UpdateDynamicData(this ItemData item)
     {
-        if (item.GameController.Player.TryGetComponent<Player>(out var playerComp))
-        {
-            var tempPlayerInfo = new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence);
-
-            if (tempPlayerInfo != item.PlayerInfo) {
-                item.PlayerInfo = tempPlayerInfo;
-                item.WasDynamiclyUpdated = true;
-            }
-        }
+        //TODO drop this?
     }
 }
