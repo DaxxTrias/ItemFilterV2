@@ -6,7 +6,9 @@ using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using static ItemFilterLibrary.ItemData;
 
 namespace ItemFilterLibrary;
 
@@ -29,6 +31,8 @@ public class ItemData
     public record AreaData(int Level, string Name, int Act, bool IsEndGame);
 
     public record ModsData(List<ItemMod> ItemMods, List<ItemMod> EnchantedMods, List<ItemMod> ExplicitMods, List<ItemMod> FracturedMods, List<ItemMod> ImplicitMods, List<ItemMod> ScourgeMods, List<ItemMod> SynthesisMods, List<ItemMod> CrucibleMods);
+
+    public record PlayerData(int Level, int Strength, int Dexterity, int Intelligence);
 
     public string Path { get; } = string.Empty;
     public string ClassName { get; } = string.Empty;
@@ -82,9 +86,10 @@ public class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; set; } = new AreaData(0, "N/A", 0, false);
+    public PlayerData PlayerInfo { get; set; } = new PlayerData(0, 0, 0, 0);
     public string ResourcePath { get; } = string.Empty;
+    public bool WasDynamiclyUpdated { get; set; } = false;
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
-
     public ItemData(LabelOnGround queriedItem, GameController gc) :
         this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
     {
@@ -106,6 +111,11 @@ public class ItemData
         Path = item.Path;
         Id = item.Id;
         InventoryId = item.InventoryId;
+
+        if (GameController.Player.TryGetComponent<Player>(out var playerComp))
+        {
+            PlayerInfo = new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence);
+        }
 
         var baseItemType = gc.Files.BaseItemTypes.Translate(Path);
         if (baseItemType != null)
@@ -322,4 +332,21 @@ public class ItemData
     public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
 
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
+
+}
+
+public static class ItemExtensions
+{
+    public static void UpdateDynamicData(this ItemData item)
+    {
+        if (item.GameController.Player.TryGetComponent<Player>(out var playerComp))
+        {
+            var tempPlayerInfo = new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence);
+
+            if (tempPlayerInfo != item.PlayerInfo) {
+                item.PlayerInfo = tempPlayerInfo;
+                item.WasDynamiclyUpdated = true;
+            }
+        }
+    }
 }
