@@ -87,12 +87,28 @@ public class ItemData
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
 
-    public PlayerData PlayerInfo => GameController != null
-        ? PlayerDataCache.GetValue(GameController, gc => new FrameCache<PlayerData>(() => CreatePlayerData(gc)))!.Value
-        : new PlayerData(0, 0, 0, 0);
+    public PlayerData PlayerInfo => _lastPlayerData = CurrentPlayerData;
+
+    private PlayerData CurrentPlayerData =>
+        GameController != null
+            ? PlayerDataCache.GetValue(GameController, gc => new FrameCache<PlayerData>(() => CreatePlayerData(gc)))!.Value
+            : new PlayerData(0, 0, 0, 0);
+
+    private PlayerData _lastPlayerData;
+    private bool _wasDynamicallyUpdated;
 
     public string ResourcePath { get; } = string.Empty;
-    public bool WasDynamiclyUpdated => true;
+
+    public bool WasDynamicallyUpdated
+    {
+        get => _wasDynamicallyUpdated || (_wasDynamicallyUpdated = _lastPlayerData != CurrentPlayerData);
+        set
+        {
+            _ = PlayerInfo;
+            _wasDynamicallyUpdated = value;
+        }
+    }
+
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
     public ItemData(LabelOnGround queriedItem, GameController gc) :
         this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
