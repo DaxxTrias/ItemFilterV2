@@ -269,6 +269,10 @@ public class ItemData
             x.ToLookup(char.ToLowerInvariant) is var lookup &&
             groupText.GroupBy(char.ToLowerInvariant).All(g => lookup[g.Key].Count() >= g.Count()));
 
+    public bool HasSockets(string socketText) =>
+                SocketInfo.SocketGroups.SelectMany(x => x).ToLookup(char.ToLowerInvariant) is var lookup &&
+                socketText.GroupBy(char.ToLowerInvariant).All(g => lookup[g.Key].Count() >= g.Count());
+
     public List<ItemMod> FindMods(string wantedMod) => ModsInfo.ItemMods
         .Where(item => item.Name.Contains(wantedMod, StringComparison.OrdinalIgnoreCase)).ToList();
 
