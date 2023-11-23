@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using ExileCore.Shared.Cache;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ItemFilterLibrary;
 
@@ -33,6 +34,8 @@ public class ItemData
     public record ModsData(List<ItemMod> ItemMods, List<ItemMod> EnchantedMods, List<ItemMod> ExplicitMods, List<ItemMod> FracturedMods, List<ItemMod> ImplicitMods, List<ItemMod> ScourgeMods, List<ItemMod> SynthesisMods, List<ItemMod> CrucibleMods);
 
     public record PlayerData(int Level, int Strength, int Dexterity, int Intelligence);
+
+    public record AttackSpeedData(decimal Base, decimal Total);
 
     public string Path { get; } = string.Empty;
     public string ClassName { get; } = string.Empty;
@@ -74,7 +77,6 @@ public class ItemData
     public int Height { get; } = 0;
     public int Width { get; } = 0;
     public bool IsWeapon { get; } = false;
-    public double AttackSpeed { get; } = 0.00;
     public int ShieldBlockChance { get; } = 0;
     public float Distance => LabelOnGround.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
     public StackData StackInfo { get; } = new StackData(0, 0);
@@ -87,6 +89,8 @@ public class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
+
+    public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
     public PlayerData PlayerInfo => _lastPlayerData = CurrentPlayerData;
 
@@ -242,19 +246,22 @@ public class ItemData
             IsWeapon = true;
 
             #region Attack Speed Calculation
-            var tempAttackSpeed = 1000f / weaponComp.AttackTime;
+            var tempAttackSpeedBase = 1000m / weaponComp.AttackTime;
+            var tempAttackSpeedTotal = tempAttackSpeedBase;
 
             if (LocalStats != null)
             {
-                tempAttackSpeed *= LocalStats
+                var modifier = LocalStats
                     .Where(kvp => kvp.Key == GameStat.LocalAttackSpeedPct)
-                    .Select(kvp => (100f + kvp.Value) / 100)
+                    .Select(kvp => (100m + kvp.Value) / 100)
                     .DefaultIfEmpty(1)
                     .First();
-            }
 
-            // Return rounded up value due to how GGG displays local weapon attack speed.
-            AttackSpeed = RoundUp(tempAttackSpeed, 2);
+                tempAttackSpeedTotal *= modifier;
+            }
+           AttackSpeed = new AttackSpeedData(decimal.Round(tempAttackSpeedBase, 2, MidpointRounding.ToPositiveInfinity),
+                                             decimal.Round(tempAttackSpeedTotal, 2, MidpointRounding.ToPositiveInfinity));
+
             #endregion Attack Speed Calculation
         }
 
@@ -374,15 +381,7 @@ public class ItemData
     public bool ContainsString(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => @string.ToLower().Contains(s));
     public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
 
-    // GGG seems to round up some stats like local attack speed from 2.1014493 -> 2.11 in the tooltip
-    private static double RoundUp(float number, int decimalPlaces)
-    {
-        double scaleFactor = Math.Pow(10, decimalPlaces);
-        return Math.Ceiling(number * scaleFactor) / scaleFactor;
-    }
-
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
-
 }
 
 public static class ItemExtensions
