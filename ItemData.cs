@@ -74,6 +74,7 @@ public class ItemData
     public int Height { get; } = 0;
     public int Width { get; } = 0;
     public bool IsWeapon { get; } = false;
+    public double AttackSpeed { get; } = 0.00;
     public int ShieldBlockChance { get; } = 0;
     public float Distance => LabelOnGround.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
     public StackData StackInfo { get; } = new StackData(0, 0);
@@ -204,11 +205,6 @@ public class ItemData
             StackInfo = new StackData(stackComp.Size, stackComp.Info.MaxStackSize);
         }
 
-        if (item.HasComponent<Weapon>())
-        {
-            IsWeapon = true;
-        }
-
         if (item.TryGetComponent<ExileCore.PoEMemory.Components.Map>(out var mapComp))
         {
             MapTier = mapComp.Tier;
@@ -239,6 +235,27 @@ public class ItemData
         if (item.TryGetComponent<LocalStats>(out var localStatsComp))
         {
             LocalStats = localStatsComp.StatDictionary;
+        }
+
+        if (item.TryGetComponent<Weapon>(out var weaponComp))
+        {
+            IsWeapon = true;
+
+            #region Attack Speed Calculation
+            var tempAttackSpeed = 1000f / weaponComp.AttackTime;
+
+            if (LocalStats != null)
+            {
+                tempAttackSpeed *= LocalStats
+                    .Where(kvp => kvp.Key == GameStat.LocalAttackSpeedPct)
+                    .Select(kvp => (100f + kvp.Value) / 100)
+                    .DefaultIfEmpty(1)
+                    .First();
+            }
+
+            // Return rounded up value due to how GGG displays local weapon attack speed.
+            AttackSpeed = RoundUp(tempAttackSpeed, 2);
+            #endregion Attack Speed Calculation
         }
 
         if (item.TryGetComponent<AttributeRequirements>(out var attributeReqComp))
@@ -356,6 +373,13 @@ public class ItemData
 
     public bool ContainsString(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => @string.ToLower().Contains(s));
     public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
+
+    // GGG seems to round up some stats like local attack speed from 2.1014493 -> 2.11 in the tooltip
+    private static double RoundUp(float number, int decimalPlaces)
+    {
+        double scaleFactor = Math.Pow(10, decimalPlaces);
+        return Math.Ceiling(number * scaleFactor) / scaleFactor;
+    }
 
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
 
