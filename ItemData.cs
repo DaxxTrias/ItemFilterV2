@@ -301,6 +301,7 @@ public class ItemData
     public bool HasSockets(string socketText)
     {
         return string.Concat(SocketInfo.SocketGroups) is var sockets &&
+               sockets.Length >= socketText.Length &&
                ParseSocketString(sockets) is var group &&
                ParseSocketString(socketText) is var request &&
                request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites;
