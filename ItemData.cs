@@ -288,14 +288,30 @@ public class ItemData
             : new PlayerData(0, 0, 0, 0);
     }
 
-    public bool HasUnorderedSocketGroup(string groupText) =>
-        SocketInfo.SocketGroups.Any(x =>
-            x.ToLookup(char.ToLowerInvariant) is var lookup &&
-            groupText.GroupBy(char.ToLowerInvariant).All(g => lookup[g.Key].Count() >= g.Count()));
+    public bool HasUnorderedSocketGroup(string groupText)
+    {
+        return SocketInfo.SocketGroups.Any(x =>
+            x.Length >= groupText.Length &&
+            ParseSocketString(x) is var group &&
+            ParseSocketString(groupText) is var request &&
+            request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites
+        );
+    }
 
-    public bool HasSockets(string socketText) =>
-                SocketInfo.SocketGroups.SelectMany(x => x).ToLookup(char.ToLowerInvariant) is var lookup &&
-                socketText.GroupBy(char.ToLowerInvariant).All(g => lookup[g.Key].Count() >= g.Count());
+    public bool HasSockets(string socketText)
+    {
+        return string.Concat(SocketInfo.SocketGroups) is var sockets &&
+               ParseSocketString(sockets) is var group &&
+               ParseSocketString(socketText) is var request &&
+               request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites;
+    }
+
+    private static (ILookup<char, char> Literals, int Wildcards, int Whites) ParseSocketString(string socketText)
+    {
+        var wildcards = socketText.Count(x => x is '?');
+        var whites = socketText.Count(x => x is 'w' or 'W');
+        return (socketText.Where(x => x is not ('?' or 'w' or 'W')).ToLookup(char.ToLowerInvariant), wildcards, whites);
+    }
 
     public List<ItemMod> FindMods(string wantedMod) => ModsInfo.ItemMods
         .Where(item => item.Name.Contains(wantedMod, StringComparison.OrdinalIgnoreCase)).ToList();
