@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using ExileCore.Shared.Cache;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Linq.Dynamic.Core.CustomTypeProviders;
 
 namespace ItemFilterLibrary;
 
@@ -31,7 +31,7 @@ public class ItemData
 
     public record AreaData(int Level, string Name, int Act, bool IsEndGame);
 
-    public record ModsData(List<ItemMod> ItemMods, List<ItemMod> EnchantedMods, List<ItemMod> ExplicitMods, List<ItemMod> FracturedMods, List<ItemMod> ImplicitMods, List<ItemMod> ScourgeMods, List<ItemMod> SynthesisMods, List<ItemMod> CrucibleMods);
+    public record ModsData(IEnumerable<ItemMod> ItemMods, IEnumerable<ItemMod> EnchantedMods, IEnumerable<ItemMod> ExplicitMods, IEnumerable<ItemMod> FracturedMods, IEnumerable<ItemMod> ImplicitMods, IEnumerable<ItemMod> ScourgeMods, IEnumerable<ItemMod> SynthesisMods, IEnumerable<ItemMod> CrucibleMods);
 
     public record PlayerData(int Level, int Strength, int Dexterity, int Intelligence);
 
@@ -183,8 +183,8 @@ public class ItemData
             Name = string.IsNullOrWhiteSpace(modsComp.UniqueName) ? Name : modsComp.UniqueName;
             FracturedModCount = modsComp.CountFractured;
             IsSynthesised = modsComp.Synthesised;
+            Enchanted = modsComp.EnchantedMods?.Count > 0;
             ModsInfo = new ModsData(modsComp.ItemMods, modsComp.EnchantedMods, modsComp.ExplicitMods, modsComp.FracturedMods, modsComp.ImplicitMods, modsComp.ScourgeMods, modsComp.SynthesisMods, modsComp.CrucibleMods);
-            Enchanted = ModsInfo.EnchantedMods?.Count > 0;
             ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
             VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
             IsBlightMap = ModsInfo.ItemMods.Any(m => m.Name.Contains("InfectedMap"));
@@ -327,17 +327,16 @@ public class ItemData
         return SumModStats(ModsInfo.ItemMods.IntersectBy(wantedMods, x => x.Name, StringComparer.OrdinalIgnoreCase));
     }
 
-    public IReadOnlyDictionary<GameStat, int> ItemStats
-    {
-        get
-        {
-            if (ModsInfo.ItemMods == null)
-            {
-                return new DefaultDictionary<GameStat, int>(0);
-            }
+    public IReadOnlyDictionary<GameStat, int> ItemStats => GetItemStats(ModsInfo.ItemMods);
 
-            return SumModStats(ModsInfo.ItemMods);
+    public IReadOnlyDictionary<GameStat, int> GetItemStats(IEnumerable<ItemMod> list)
+    {
+        if (list == null)
+        {
+            return new DefaultDictionary<GameStat, int>(0);
         }
+
+        return SumModStats(list);
     }
 
     public IReadOnlyDictionary<GameStat, float> ModWeightedStatSum(params (string, float)[] wantedMods)
@@ -401,10 +400,16 @@ public class ItemData
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
 }
 
-public static class ItemExtensions
+[DynamicLinqType]
+public static class ItemDataExtensions
 {
-    public static void UpdateDynamicData(this ItemData item)
+    public static IReadOnlyDictionary<GameStat, int> GetStats(this IEnumerable<ItemMod> mods)
     {
-        //TODO drop this?
+        if (mods == null || !mods.Any())
+        {
+            return new DefaultDictionary<GameStat, int>(0);
+        }
+
+        return ItemData.SumModStats(mods.ToList());
     }
 }
