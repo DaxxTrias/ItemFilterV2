@@ -2,18 +2,63 @@ using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
 using ExileCore.PoEMemory.MemoryObjects;
+using ExileCore.Shared.Cache;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using ExileCore.Shared.Cache;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
+using System.Runtime.CompilerServices;
 
 namespace ItemFilterLibrary;
 
 public class ItemData
 {
+    public record ModsData
+    {
+        public IEnumerable<ItemMod> ItemMods { get; init; }
+        public IEnumerable<ItemMod> EnchantedMods { get; init; }
+        public IEnumerable<ItemMod> ExplicitMods { get; init; }
+        public IEnumerable<ItemMod> FracturedMods { get; init; }
+        public IEnumerable<ItemMod> ImplicitMods { get; init; }
+        public IEnumerable<ItemMod> ScourgeMods { get; init; }
+        public IEnumerable<ItemMod> SynthesisMods { get; init; }
+        public IEnumerable<ItemMod> CrucibleMods { get; init; }
+
+        public Dictionary<string, IEnumerable<ItemMod>> ModsDictionary { get; }
+
+        public ModsData(IEnumerable<ItemMod> itemMods,
+                        IEnumerable<ItemMod> enchantedMods,
+                        IEnumerable<ItemMod> explicitMods,
+                        IEnumerable<ItemMod> fracturedMods,
+                        IEnumerable<ItemMod> implicitMods,
+                        IEnumerable<ItemMod> scourgeMods,
+                        IEnumerable<ItemMod> synthesisMods,
+                        IEnumerable<ItemMod> crucibleMods)
+        {
+            ItemMods = itemMods;
+            EnchantedMods = enchantedMods;
+            ExplicitMods = explicitMods;
+            FracturedMods = fracturedMods;
+            ImplicitMods = implicitMods;
+            ScourgeMods = scourgeMods;
+            SynthesisMods = synthesisMods;
+            CrucibleMods = crucibleMods;
+
+            ModsDictionary = new Dictionary<string, IEnumerable<ItemMod>>
+            {
+                {"ItemMods", itemMods},
+                {"EnchantedMods", enchantedMods},
+                {"ExplicitMods", explicitMods},
+                {"FracturedMods", fracturedMods},
+                {"ImplicitMods", implicitMods},
+                {"ScourgeMods", scourgeMods},
+                {"SynthesisMods", synthesisMods},
+                {"CrucibleMods", crucibleMods}
+            };
+        }
+    }
+
     private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
     public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType);
 
@@ -30,8 +75,6 @@ public class ItemData
     public record ArmourData(int Armour, int Evasion, int ES);
 
     public record AreaData(int Level, string Name, int Act, bool IsEndGame);
-
-    public record ModsData(IEnumerable<ItemMod> ItemMods, IEnumerable<ItemMod> EnchantedMods, IEnumerable<ItemMod> ExplicitMods, IEnumerable<ItemMod> FracturedMods, IEnumerable<ItemMod> ImplicitMods, IEnumerable<ItemMod> ScourgeMods, IEnumerable<ItemMod> SynthesisMods, IEnumerable<ItemMod> CrucibleMods);
 
     public record PlayerData(int Level, int Strength, int Dexterity, int Intelligence);
 
@@ -115,6 +158,7 @@ public class ItemData
     }
 
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
+
     public ItemData(LabelOnGround queriedItem, GameController gc) :
         this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
     {
@@ -246,6 +290,7 @@ public class ItemData
             IsWeapon = true;
 
             #region Attack Speed Calculation
+
             var tempAttackSpeedBase = 1000m / weaponComp.AttackTime;
             var tempAttackSpeedTotal = tempAttackSpeedBase;
 
@@ -259,8 +304,8 @@ public class ItemData
 
                 tempAttackSpeedTotal *= modifier;
             }
-           AttackSpeed = new AttackSpeedData(decimal.Round(tempAttackSpeedBase, 2, MidpointRounding.ToPositiveInfinity),
-                                             decimal.Round(tempAttackSpeedTotal, 2, MidpointRounding.ToPositiveInfinity));
+            AttackSpeed = new AttackSpeedData(decimal.Round(tempAttackSpeedBase, 2, MidpointRounding.ToPositiveInfinity),
+                                              decimal.Round(tempAttackSpeedTotal, 2, MidpointRounding.ToPositiveInfinity));
 
             #endregion Attack Speed Calculation
         }
@@ -283,8 +328,8 @@ public class ItemData
 
     private static PlayerData CreatePlayerData(GameController gameController)
     {
-        return gameController.Player.TryGetComponent<Player>(out var playerComp) 
-            ? new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence) 
+        return gameController.Player.TryGetComponent<Player>(out var playerComp)
+            ? new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence)
             : new PlayerData(0, 0, 0, 0);
     }
 
@@ -331,9 +376,47 @@ public class ItemData
         return SumModStats(ModsInfo.ItemMods.IntersectBy(wantedMods, x => x.Name, StringComparer.OrdinalIgnoreCase));
     }
 
-    public IReadOnlyDictionary<GameStat, int> ItemStats => GetItemStats(ModsInfo.ItemMods);
+    private Dictionary<string, IReadOnlyDictionary<GameStat, int>> _statsCache = new Dictionary<string, IReadOnlyDictionary<GameStat, int>>();
 
     public IReadOnlyDictionary<GameStat, int> GetItemStats(IEnumerable<ItemMod> list)
+    {
+        string cacheKey = FindCacheKeyForList(list);
+        if (cacheKey == null)
+        {
+            return ComputeItemStats(list);
+        }
+
+        if (!_statsCache.TryGetValue(cacheKey, out var cachedStats))
+        {
+            cachedStats = ComputeItemStats(list);
+            _statsCache[cacheKey] = cachedStats;
+        }
+        return cachedStats;
+    }
+
+    public IReadOnlyDictionary<GameStat, int> ItemStats
+    {
+        get
+        {
+            return _itemStatsCache ??= GetItemStats(ModsInfo.ItemMods);
+        }
+    }
+
+    private IReadOnlyDictionary<GameStat, int> _itemStatsCache;
+
+    private string FindCacheKeyForList(IEnumerable<ItemMod> list)
+    {
+        foreach (var kvp in ModsInfo.ModsDictionary)
+        {
+            if (kvp.Value == list)
+            {
+                return kvp.Key;
+            }
+        }
+        return null;
+    }
+
+    private IReadOnlyDictionary<GameStat, int> ComputeItemStats(IEnumerable<ItemMod> list)
     {
         if (list == null)
         {
@@ -392,13 +475,44 @@ public class ItemData
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
-    public bool HasTag(string wantedTag) => Tags.Concat(PathTags).Select(tags => tags.ToLower()).Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase));
-    public bool HasTagCase(string wantedTag) => Tags.Concat(PathTags).Select(tags => tags).Any(tag => tag.Contains(wantedTag));
+    private readonly Dictionary<string, bool> _hasTagCache = [];
 
-    public bool HasTag(List<string> tags, string wantedTag) => tags.Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase));
-    public bool HasTagCase(List<string> tags, string wantedTag) => tags.Any(tag => tag.Contains(wantedTag));
+    private bool CheckAndCacheTags(string cacheKey, Func<bool> checkFunction)
+    {
+        if (!_hasTagCache.TryGetValue(cacheKey, out bool result))
+        {
+            result = checkFunction();
+            _hasTagCache[cacheKey] = result;
+        }
+        return result;
+    }
+
+    public bool HasTag(string wantedTag)
+    {
+        string cacheKey = $"Single_{wantedTag.ToLower()}";
+        return CheckAndCacheTags(cacheKey, () => Tags.Concat(PathTags).Select(tags => tags.ToLower()).Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase)));
+    }
+
+    public bool HasTagCase(string wantedTag)
+    {
+        string cacheKey = $"SingleCase_{wantedTag}";
+        return CheckAndCacheTags(cacheKey, () => Tags.Concat(PathTags).Any(tag => tag.Contains(wantedTag)));
+    }
+
+    public bool HasTag(List<string> tags, string wantedTag)
+    {
+        string cacheKey = $"List_{string.Join("_", tags)}_{wantedTag.ToLower()}";
+        return CheckAndCacheTags(cacheKey, () => tags.Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase)));
+    }
+
+    public bool HasTagCase(List<string> tags, string wantedTag)
+    {
+        string cacheKey = $"ListCase_{string.Join("_", tags)}_{wantedTag}";
+        return CheckAndCacheTags(cacheKey, () => tags.Any(tag => tag.Contains(wantedTag)));
+    }
 
     public bool ContainsString(string inputString, params string[] wantedStrings) => wantedStrings.Any(wantedString => inputString.Contains(wantedString, StringComparison.CurrentCultureIgnoreCase));
+
     public bool ContainsStringCase(string inputString, params string[] wantedStrings) => wantedStrings.Select(wantedString => wantedString).Any(inputString.Contains);
 
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
