@@ -12,61 +12,16 @@ using System.Runtime.CompilerServices;
 
 namespace ItemFilterLibrary;
 
-public class ItemData
+public partial class ItemData
 {
-    public record ModsData
-    {
-        public IEnumerable<ItemMod> ItemMods { get; init; }
-        public IEnumerable<ItemMod> EnchantedMods { get; init; }
-        public IEnumerable<ItemMod> ExplicitMods { get; init; }
-        public IEnumerable<ItemMod> FracturedMods { get; init; }
-        public IEnumerable<ItemMod> ImplicitMods { get; init; }
-        public IEnumerable<ItemMod> ScourgeMods { get; init; }
-        public IEnumerable<ItemMod> SynthesisMods { get; init; }
-        public IEnumerable<ItemMod> CrucibleMods { get; init; }
-
-        public Dictionary<string, IEnumerable<ItemMod>> ModsDictionary { get; }
-
-        public ModsData(IEnumerable<ItemMod> itemMods,
-                        IEnumerable<ItemMod> enchantedMods,
-                        IEnumerable<ItemMod> explicitMods,
-                        IEnumerable<ItemMod> fracturedMods,
-                        IEnumerable<ItemMod> implicitMods,
-                        IEnumerable<ItemMod> scourgeMods,
-                        IEnumerable<ItemMod> synthesisMods,
-                        IEnumerable<ItemMod> crucibleMods)
-        {
-            ItemMods = itemMods;
-            EnchantedMods = enchantedMods;
-            ExplicitMods = explicitMods;
-            FracturedMods = fracturedMods;
-            ImplicitMods = implicitMods;
-            ScourgeMods = scourgeMods;
-            SynthesisMods = synthesisMods;
-            CrucibleMods = crucibleMods;
-
-            ModsDictionary = new Dictionary<string, IEnumerable<ItemMod>>
-            {
-                {"ItemMods", itemMods},
-                {"EnchantedMods", enchantedMods},
-                {"ExplicitMods", explicitMods},
-                {"FracturedMods", fracturedMods},
-                {"ImplicitMods", implicitMods},
-                {"ScourgeMods", scourgeMods},
-                {"SynthesisMods", synthesisMods},
-                {"CrucibleMods", crucibleMods}
-            };
-        }
-    }
-
     private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
-    public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType);
+    public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType, bool IsGem);
 
     public record StackData(int Count, int MaxCount);
 
     public record ChargesData(int Current, int Max, int PerUse);
 
-    public record SocketData(int LargestLinkSize, int SocketNumber, IReadOnlyCollection<IReadOnlyCollection<int>> Links, IReadOnlyCollection<string> SocketGroups);
+    public record SocketData(int LargestLinkSize, int SocketNumber, IReadOnlyCollection<IReadOnlyCollection<int>> Links, IReadOnlyCollection<string> SocketGroups, IReadOnlyCollection<ItemData> SocketedGems);
 
     public record FlaskData(int LifeRecovery, int ManaRecovery, Dictionary<GameStat, int> Stats);
 
@@ -75,8 +30,6 @@ public class ItemData
     public record ArmourData(int Armour, int Evasion, int ES);
 
     public record AreaData(int Level, string Name, int Act, bool IsEndGame);
-
-    public record PlayerData(int Level, int Strength, int Dexterity, int Intelligence);
 
     public record AttackSpeedData(decimal Base, decimal Total);
 
@@ -114,7 +67,7 @@ public class ItemData
     public List<string> PathTags { get; } = new List<string>();
     public List<string> Tags { get; } = new List<string>();
     public LabelOnGround LabelOnGround { get; } = null;
-    public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, SkillGemQualityTypeE.Superior);
+    public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, SkillGemQualityTypeE.Superior, false);
     public uint InventoryId { get; }
     public uint Id { get; }
     public int Height { get; } = 0;
@@ -125,7 +78,7 @@ public class ItemData
     public StackData StackInfo { get; } = new StackData(0, 0);
     public Entity Entity { get; }
     public GameController GameController { get; }
-    public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>());
+    public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>(), new List<ItemData>());
     public ChargesData ChargeInfo { get; } = new ChargesData(0, 0, 0);
     public FlaskData FlaskInfo { get; } = new FlaskData(0, 0, new Dictionary<GameStat, int>());
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
@@ -139,17 +92,28 @@ public class ItemData
 
     private PlayerData CurrentPlayerData =>
         GameController != null
-            ? PlayerDataCache.GetValue(GameController, gc => new FrameCache<PlayerData>(() => CreatePlayerData(gc)))!.Value
-            : new PlayerData(0, 0, 0, 0);
+            ? PlayerDataCache.GetValue(GameController, gc =>
+            {
+                var updateFunc = CacheUtils.RememberLastValue<PlayerData>(prev =>
+                    (prev, new PlayerData(gc)) switch
+                    {
+                        (null, var @new) => @new,
+                        ({ } old, { } @new) => @new.Equals(old) ? old : @new
+                    });
+                return new TimeCache<PlayerData>(updateFunc, 1000);
+            })!.Value
+            : new PlayerData(GameController);
 
     private PlayerData _lastPlayerData;
     private bool _wasDynamicallyUpdated;
+    private readonly Dictionary<string, IReadOnlyDictionary<GameStat, int>> _statsCache = new();
+    private IReadOnlyDictionary<GameStat, int> _itemStatsCache;
 
     public string ResourcePath { get; } = string.Empty;
 
     public bool WasDynamicallyUpdated
     {
-        get => _wasDynamicallyUpdated || (_wasDynamicallyUpdated = _lastPlayerData != CurrentPlayerData);
+        get => _wasDynamicallyUpdated || (_wasDynamicallyUpdated = CurrentPlayerData.Equals(_lastPlayerData));
         set
         {
             _ = PlayerInfo;
@@ -240,12 +204,13 @@ public class ItemData
         {
             // issue to be resolved in core, if a corrupted ring with sockets gets a new implicit it will still have the component but the component logic will throw an exception
             if (socketComp.NumberOfSockets > 0)
-                SocketInfo = new SocketData(socketComp.LargestLinkSize, socketComp.NumberOfSockets, socketComp.Links, socketComp.SocketGroup);
+                SocketInfo = new SocketData(socketComp.LargestLinkSize, socketComp.NumberOfSockets, socketComp.Links, socketComp.SocketGroup,
+                    socketComp.SocketedGems.Select(x => new ItemData(x.GemEntity, GameController)).ToList());
         }
 
         if (item.TryGetComponent<SkillGem>(out var gemComp))
         {
-            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, gemComp.QualityType);
+            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, gemComp.QualityType, true);
         }
 
         if (item.TryGetComponent<Stack>(out var stackComp))
@@ -326,12 +291,8 @@ public class ItemData
         }
     }
 
-    private static PlayerData CreatePlayerData(GameController gameController)
-    {
-        return gameController.Player.TryGetComponent<Player>(out var playerComp)
-            ? new PlayerData(playerComp.Level, playerComp.Strength, playerComp.Dexterity, playerComp.Intelligence)
-            : new PlayerData(0, 0, 0, 0);
-    }
+    public bool IsUnownedItem(Func<ItemData, bool> criterion) => criterion(this) && !PlayerInfo.OwnedItems.Any(criterion);
+    public bool IsUnownedGem(Func<ItemData, bool> criterion) => GemInfo.IsGem && criterion(this) && !PlayerInfo.OwnedGems.Any(criterion);
 
     public bool HasUnorderedSocketGroup(string groupText) => HasUnorderedSocketGroup(groupText, false);
 
@@ -376,11 +337,11 @@ public class ItemData
         return SumModStats(ModsInfo.ItemMods.IntersectBy(wantedMods, x => x.Name, StringComparer.OrdinalIgnoreCase));
     }
 
-    private Dictionary<string, IReadOnlyDictionary<GameStat, int>> _statsCache = new Dictionary<string, IReadOnlyDictionary<GameStat, int>>();
-
     public IReadOnlyDictionary<GameStat, int> GetItemStats(IEnumerable<ItemMod> list)
     {
-        string cacheKey = FindCacheKeyForList(list);
+        var cacheKey = list is IReadOnlyCollection<ItemMod> collection 
+            ? ModsInfo.ModsDictionary.GetValueOrDefault(collection) 
+            : null;
         if (cacheKey == null)
         {
             return ComputeItemStats(list);
@@ -394,27 +355,7 @@ public class ItemData
         return cachedStats;
     }
 
-    public IReadOnlyDictionary<GameStat, int> ItemStats
-    {
-        get
-        {
-            return _itemStatsCache ??= GetItemStats(ModsInfo.ItemMods);
-        }
-    }
-
-    private IReadOnlyDictionary<GameStat, int> _itemStatsCache;
-
-    private string FindCacheKeyForList(IEnumerable<ItemMod> list)
-    {
-        foreach (var kvp in ModsInfo.ModsDictionary)
-        {
-            if (kvp.Value == list)
-            {
-                return kvp.Key;
-            }
-        }
-        return null;
-    }
+    public IReadOnlyDictionary<GameStat, int> ItemStats => _itemStatsCache ??= GetItemStats(ModsInfo.ItemMods);
 
     private IReadOnlyDictionary<GameStat, int> ComputeItemStats(IEnumerable<ItemMod> list)
     {
@@ -475,7 +416,7 @@ public class ItemData
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
-    private readonly Dictionary<string, bool> _hasTagCache = [];
+    private readonly Dictionary<string, bool> _hasTagCache = new();
 
     private bool CheckAndCacheTags(string cacheKey, Func<bool> checkFunction)
     {
@@ -489,29 +430,29 @@ public class ItemData
 
     public bool HasTag(string wantedTag)
     {
-        string cacheKey = $"Single_{wantedTag.ToLower()}";
-        return CheckAndCacheTags(cacheKey, () => Tags.Concat(PathTags).Select(tags => tags.ToLower()).Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase)));
+        return CheckAndCacheTags($"Single_{wantedTag.ToLower()}", 
+            () => Tags.Concat(PathTags).Any(tag => tag.Contains(wantedTag, StringComparison.OrdinalIgnoreCase)));
     }
 
     public bool HasTagCase(string wantedTag)
     {
-        string cacheKey = $"SingleCase_{wantedTag}";
-        return CheckAndCacheTags(cacheKey, () => Tags.Concat(PathTags).Any(tag => tag.Contains(wantedTag)));
+        return CheckAndCacheTags($"SingleCase_{wantedTag}", 
+            () => Tags.Concat(PathTags).Any(tag => tag.Contains(wantedTag)));
     }
 
     public bool HasTag(List<string> tags, string wantedTag)
     {
-        string cacheKey = $"List_{string.Join("_", tags)}_{wantedTag.ToLower()}";
-        return CheckAndCacheTags(cacheKey, () => tags.Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase)));
+        return CheckAndCacheTags($"List_{string.Join("_", tags.OrderBy(x => x))}_{wantedTag.ToLower()}", 
+            () => tags.Any(tag => tag.Contains(wantedTag, StringComparison.OrdinalIgnoreCase)));
     }
 
     public bool HasTagCase(List<string> tags, string wantedTag)
     {
-        string cacheKey = $"ListCase_{string.Join("_", tags)}_{wantedTag}";
-        return CheckAndCacheTags(cacheKey, () => tags.Any(tag => tag.Contains(wantedTag)));
+        return CheckAndCacheTags($"ListCase_{string.Join("_", tags.OrderBy(x => x))}_{wantedTag}", 
+            () => tags.Any(tag => tag.Contains(wantedTag)));
     }
 
-    public bool ContainsString(string inputString, params string[] wantedStrings) => wantedStrings.Any(wantedString => inputString.Contains(wantedString, StringComparison.CurrentCultureIgnoreCase));
+    public bool ContainsString(string inputString, params string[] wantedStrings) => wantedStrings.Any(wantedString => inputString.Contains(wantedString, StringComparison.OrdinalIgnoreCase));
 
     public bool ContainsStringCase(string inputString, params string[] wantedStrings) => wantedStrings.Select(wantedString => wantedString).Any(inputString.Contains);
 
