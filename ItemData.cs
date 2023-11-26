@@ -288,20 +288,24 @@ public class ItemData
             : new PlayerData(0, 0, 0, 0);
     }
 
-    public bool HasUnorderedSocketGroup(string groupText)
+    public bool HasUnorderedSocketGroup(string groupText) => HasUnorderedSocketGroup(groupText, false);
+
+    public bool HasUnorderedSocketGroup(string groupText, bool socketGroupMatch)
     {
         return SocketInfo.SocketGroups.Any(x =>
-            x.Length >= groupText.Length &&
+            (socketGroupMatch ? x.Length == groupText.Length : x.Length >= groupText.Length) &&
             ParseSocketString(x) is var group &&
             ParseSocketString(groupText) is var request &&
             request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites
         );
     }
 
-    public bool HasSockets(string socketText)
+    public bool HasSockets(string socketText) => HasSockets(socketText, false);
+
+    public bool HasSockets(string socketText, bool socketsMatch)
     {
         return string.Concat(SocketInfo.SocketGroups) is var sockets &&
-               sockets.Length >= socketText.Length &&
+               (socketsMatch ? sockets.Length == socketText.Length : sockets.Length >= socketText.Length) &&
                ParseSocketString(sockets) is var group &&
                ParseSocketString(socketText) is var request &&
                request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites;
