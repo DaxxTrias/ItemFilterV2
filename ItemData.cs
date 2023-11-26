@@ -388,14 +388,14 @@ public class ItemData
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
 
-    public bool HasTag(string wantedTag) => Tags.Concat(PathTags).Select(s => s.ToLower()).Any(s => wantedTag.ToLower().Contains(s));
-    public bool HasTagCase(string wantedTag) => Tags.Concat(PathTags).Select(s => s).Any(s => wantedTag.Contains(s));
+    public bool HasTag(string wantedTag) => Tags.Concat(PathTags).Select(tags => tags.ToLower()).Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase));
+    public bool HasTagCase(string wantedTag) => Tags.Concat(PathTags).Select(tags => tags).Any(tag => tag.Contains(wantedTag));
 
-    public bool HasTag(List<string> tags, string wantedTag) => tags.Select(s => s.ToLower()).Any(s => wantedTag.ToLower().Contains(s));
-    public bool HasTagCase(List<string> tags, string wantedTag) => tags.Select(s => s).Any(s => wantedTag.Contains(s));
+    public bool HasTag(List<string> tags, string wantedTag) => tags.Any(tag => tag.Contains(wantedTag, StringComparison.CurrentCultureIgnoreCase));
+    public bool HasTagCase(List<string> tags, string wantedTag) => tags.Any(tag => tag.Contains(wantedTag));
 
-    public bool ContainsString(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s.ToLower()).Any(s => @string.ToLower().Contains(s));
-    public bool ContainsStringCase(string @string, params string[] wantedStrings) => wantedStrings.Select(s => s).Any(s => @string.Contains(s));
+    public bool ContainsString(string inputString, params string[] wantedStrings) => wantedStrings.Any(wantedString => inputString.Contains(wantedString, StringComparison.CurrentCultureIgnoreCase));
+    public bool ContainsStringCase(string inputString, params string[] wantedStrings) => wantedStrings.Select(wantedString => wantedString).Any(inputString.Contains);
 
     public override string ToString() => $"{BaseName} ({ClassName}) Dist: {Distance}";
 }
