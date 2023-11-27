@@ -74,7 +74,7 @@ public partial class ItemData
     public int Width { get; } = 0;
     public bool IsWeapon { get; } = false;
     public int ShieldBlockChance { get; } = 0;
-    public float Distance => LabelOnGround.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
+    public float Distance => LabelOnGround?.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
     public StackData StackInfo { get; } = new StackData(0, 0);
     public Entity Entity { get; }
     public GameController GameController { get; }
