@@ -9,18 +9,11 @@ using System.Linq.Expressions;
 
 namespace ItemFilterLibrary;
 
-public class ItemQuery
+public class ItemQuery<T> where T : ItemData
 {
-    private static readonly ParsingConfig ParsingConfig = new ParsingConfig()
-    {
-        AllowNewToEvaluateAnyType = true,
-        ResolveTypesBySimpleName = true,
-        CustomTypeProvider = new CustomDynamicLinqCustomTypeProvider(),
-    };
-
     public string Query { get; set; }
     public string RawQuery { get; set; }
-    public Func<ItemData, bool> CompiledQuery { get; set; }
+    public Func<T, bool> CompiledQuery { get; set; }
     public int InitialLine { get; set; }
     public bool FailedToCompile { get; set; } = false;
     public override string ToString()
@@ -28,12 +21,12 @@ public class ItemQuery
         return $"InitialLine({InitialLine}) Query({Query.Replace("\n", "")}) RawQuery({RawQuery.Replace("\n", "")}) Failed?({FailedToCompile})";
     }
 
-    public bool Matches(ItemData item)
+    public bool Matches(T item)
     {
         return Matches(item, false);
     }
 
-    public bool Matches(ItemData item, bool enableDebug)
+    public bool Matches(T item, bool enableDebug)
     {
         if (FailedToCompile)
         {
@@ -57,21 +50,45 @@ public class ItemQuery
 
         return false;
     }
+}
 
-
-    public static ItemQuery Load(string query)
+public class ItemQuery : ItemQuery<ItemData>
+{
+    private static readonly ParsingConfig ParsingConfig = new ParsingConfig()
     {
-        return Load(query, query, 0);
+        AllowNewToEvaluateAnyType = true,
+        ResolveTypesBySimpleName = true,
+        CustomTypeProvider = new CustomDynamicLinqCustomTypeProvider(),
+    };
+
+    public static ItemQuery Load(string query) => Load(query, query, 0);
+
+    public static ItemQuery<T> Load<T>(string query) where T : ItemData
+    {
+        return Load<T>(query, query, 0);
     }
 
     public static ItemQuery Load(string query, string rawQuery, int line)
     {
+        var generic = Load<ItemData>(query, rawQuery, line);
+        return new ItemQuery
+        {
+            RawQuery = generic.RawQuery,
+            CompiledQuery = generic.CompiledQuery,
+            FailedToCompile = generic.FailedToCompile,
+            InitialLine = generic.InitialLine,
+            Query = generic.Query,
+        };
+    }
+
+    public static ItemQuery<T> Load<T>(string query, string rawQuery, int line) where T : ItemData
+    {
         try
         {
-            var lambda = ParseItemDataLambda(query);
+            var lambda = ParseItemDataLambda<T>(query);
             var compiledLambda = lambda.Compile();
 
-            return new ItemQuery
+            return new ItemQuery<T>
             {
                 Query = query,
                 RawQuery = rawQuery,
@@ -87,7 +104,7 @@ public class ItemQuery
 
             DebugWindow.LogError($"[ItemQueryProcessor] Error processing query ({rawQuery}) on Line # {line}: {exMessage}", 15);
 
-            return new ItemQuery
+            return new ItemQuery<T>
             {
                 Query = query,
                 RawQuery = rawQuery,
@@ -98,84 +115,34 @@ public class ItemQuery
         }
     }
 
-    private static Expression<Func<ItemData, bool>> ParseItemDataLambda(string expression)
+    private static Expression<Func<T, bool>> ParseItemDataLambda<T>(string expression) where T : ItemData
     {
-        return DynamicExpressionParser.ParseLambda<ItemData, bool>(ParsingConfig, false, expression);
+        return DynamicExpressionParser.ParseLambda<T, bool>(ParsingConfig, false, expression);
     }
 }
 
-public class ItemFilter
+public class ItemFilter : ItemFilter<ItemData>
 {
-    private readonly List<(ItemQuery Query, bool IsNegative)> _queries;
-
-    public IReadOnlyCollection<(ItemQuery Query, bool IsNegative)> Queries => _queries;
-
-    public ItemFilter(List<ItemQuery> queries)
+    public ItemFilter(ItemFilter<ItemData> genericFilter) : base(genericFilter.Queries.ToList())
     {
-        _queries = queries.Select(x=>(x, false)).ToList();
-    }
-    
-    public ItemFilter(List<(ItemQuery, bool isNegative)> queries)
-    {
-        _queries = queries;
     }
 
-    public static ItemFilter LoadFromPath(string filterFilePath)
+    public ItemFilter(List<ItemQuery> queries) : base(queries.Cast<ItemQuery<ItemData>>().ToList())
     {
-        return new ItemFilter(GetQueries(filterFilePath, File.ReadAllLines(filterFilePath)));
     }
 
-    public static ItemFilter LoadFromList(string filterName, IEnumerable<string> list)
+    public ItemFilter(List<(ItemQuery, bool isNegative)> queries) : base(queries.Select(x => ((ItemQuery<ItemData>)x.Item1, x.isNegative)).ToList())
     {
-        var compiledQueries = list.Select((query, i) => ItemQuery.Load(query, query, i + 1)).ToList();
-
-        DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterName.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
-        return new ItemFilter(compiledQueries);
     }
 
-    public static ItemFilter LoadFromString(string @string)
+    private static List<(ItemQuery<T>, bool isNegative)> GetQueries<T>(string filterFilePath, string[] rawLines) where T : ItemData
     {
-        return new ItemFilter(GetQueries("memory", @string.ReplaceLineEndings("\n").Split("\n")));
-    }
-
-    public bool Matches(ItemData item)
-    {
-        return Matches(item, false);
-    }
-
-    public bool Matches(ItemData item, bool enableDebug)
-    {
-        foreach (var (query, isNegative) in _queries)
-        {
-            try
-            {
-                if (!query.FailedToCompile && query.CompiledQuery(item))
-                {
-                    if (enableDebug)
-                        DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {query.InitialLine}\nItem({item.BaseName})\n{query.RawQuery}", 10);
-
-                    return !isNegative;
-                }
-            }
-            catch (Exception ex)
-            {
-                // huge issue when the amount of catching starts creeping up
-                // 4500 lines that produce an error on one item take 50ms per Tick() vs handling the error taking 0.2ms
-                DebugWindow.LogError($"Evaluation Error! Line # {query.InitialLine} Entry: '{query.RawQuery}' Item {item.BaseName}\n{ex}");
-            }
-        }
-
-        return false;
-    }
-
-    private static List<(ItemQuery, bool isNegative)> GetQueries(string filterFilePath, string[] rawLines)
-    {
-        var compiledQueries = new List<(ItemQuery, bool isNegative)>();
+        var compiledQueries = new List<(ItemQuery<T>, bool isNegative)>();
         var lines = SplitQueries(rawLines);
 
         foreach (var (query, rawQuery, initialLine, isNegative) in lines)
         {
-            compiledQueries.Add((ItemQuery.Load(query, rawQuery, initialLine), isNegative));
+            compiledQueries.Add((ItemQuery.Load<T>(query, rawQuery, initialLine), isNegative));
         }
 
         DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterFilePath.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
@@ -205,7 +172,7 @@ public class ItemFilter
                         sectionStartLine = index + 1; // Set at the start of each section
                         if (lineWithoutComment[0] == '^')
                         {
-                            lineWithoutComment=lineWithoutComment[1..];
+                            lineWithoutComment = lineWithoutComment[1..];
                             isNegative = true;
                         }
                     }
@@ -233,5 +200,72 @@ public class ItemFilter
         }
 
         return lines;
+    }
+
+    public static ItemFilter LoadFromPath(string filterFilePath) => new ItemFilter(LoadFromPath<ItemData>(filterFilePath));
+    public static ItemFilter<T> LoadFromPath<T>(string filterFilePath) where T : ItemData
+    {
+        return new ItemFilter<T>(GetQueries<T>(filterFilePath, File.ReadAllLines(filterFilePath)));
+    }
+
+    public static ItemFilter LoadFromList(string filterName, IEnumerable<string> list) => new ItemFilter(LoadFromList<ItemData>(filterName, list));
+    public static ItemFilter<T> LoadFromList<T>(string filterName, IEnumerable<string> list) where T : ItemData
+    {
+        var compiledQueries = list.Select((query, i) => ItemQuery.Load<T>(query, query, i + 1)).ToList();
+        DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterName.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
+        return new ItemFilter<T>(compiledQueries);
+    }
+
+    public static ItemFilter LoadFromString(string @string) => new ItemFilter(LoadFromString<ItemData>(@string));
+    public static ItemFilter<T> LoadFromString<T>(string @string) where T : ItemData
+    {
+        return new ItemFilter<T>(GetQueries<T>("memory", @string.ReplaceLineEndings("\n").Split("\n")));
+    }
+}
+
+public class ItemFilter<T> where T : ItemData
+{
+    private readonly List<(ItemQuery<T> Query, bool IsNegative)> _queries;
+
+    public IReadOnlyCollection<(ItemQuery<T> Query, bool IsNegative)> Queries => _queries;
+
+    public ItemFilter(List<ItemQuery<T>> queries)
+    {
+        _queries = queries.Select(x=>(x, false)).ToList();
+    }
+    
+    public ItemFilter(List<(ItemQuery<T>, bool isNegative)> queries)
+    {
+        _queries = queries;
+    }
+
+   public bool Matches(T item)
+    {
+        return Matches(item, false);
+    }
+
+    public bool Matches(T item, bool enableDebug)
+    {
+        foreach (var (query, isNegative) in _queries)
+        {
+            try
+            {
+                if (!query.FailedToCompile && query.CompiledQuery(item))
+                {
+                    if (enableDebug)
+                        DebugWindow.LogMsg($"[ItemQueryProcessor] Matches an Item\nLine # {query.InitialLine}\nItem({item.BaseName})\n{query.RawQuery}", 10);
+
+                    return !isNegative;
+                }
+            }
+            catch (Exception ex)
+            {
+                // huge issue when the amount of catching starts creeping up
+                // 4500 lines that produce an error on one item take 50ms per Tick() vs handling the error taking 0.2ms
+                DebugWindow.LogError($"Evaluation Error! Line # {query.InitialLine} Entry: '{query.RawQuery}' Item {item.BaseName}\n{ex}");
+            }
+        }
+
+        return false;
     }
 }
