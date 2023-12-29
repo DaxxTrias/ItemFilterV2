@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace ItemFilterLibrary;
 
@@ -32,6 +33,9 @@ public partial class ItemData
     public record AreaData(int Level, string Name, int Act, bool IsEndGame);
 
     public record AttackSpeedData(decimal Base, decimal Total);
+
+    private readonly Dictionary<string, bool> _hasTagCache = new();
+    private readonly Lazy<double> _estimatedValue;
 
     public string Path { get; } = string.Empty;
     public string ClassName { get; } = string.Empty;
@@ -75,6 +79,7 @@ public partial class ItemData
     public bool IsWeapon { get; } = false;
     public int ShieldBlockChance { get; } = 0;
     public float Distance => LabelOnGround?.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
+    public double EstimatedValue => _estimatedValue.Value;
     public StackData StackInfo { get; } = new StackData(0, 0);
     public Entity Entity { get; }
     public GameController GameController { get; }
@@ -289,6 +294,16 @@ public partial class ItemData
         {
             ShieldBlockChance = shieldComp.ChanceToBlock;
         }
+
+        _estimatedValue = new Lazy<double>(() =>
+        {
+            var value = gc.PluginBridge.GetMethod<Func<Entity, double>>("NinjaPrice.GetValue")?.Invoke(Entity);
+            if (value == null)
+            {
+                DebugWindow.LogError("Using EstimatedValue without NinjaPricer is not supported");
+            }
+            return value ?? 0;
+        }, LazyThreadSafetyMode.PublicationOnly);
     }
 
     public bool IsUnownedItem(Func<ItemData, bool> criterion) => criterion(this) && !PlayerInfo.OwnedItems.Any(criterion);
@@ -415,8 +430,6 @@ public partial class ItemData
 
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
-
-    private readonly Dictionary<string, bool> _hasTagCache = new();
 
     private bool CheckAndCacheTags(string cacheKey, Func<bool> checkFunction)
     {
