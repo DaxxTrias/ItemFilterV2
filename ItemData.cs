@@ -78,10 +78,11 @@ public partial class ItemData
     public int Width { get; } = 0;
     public bool IsWeapon { get; } = false;
     public int ShieldBlockChance { get; } = 0;
-    public float Distance => LabelOnGround?.ItemOnGround?.DistancePlayer ?? float.PositiveInfinity;
+    public float Distance => GroundItem?.DistancePlayer ?? float.PositiveInfinity;
     public double EstimatedValue => _estimatedValue.Value;
     public StackData StackInfo { get; } = new StackData(0, 0);
     public Entity Entity { get; }
+    public Entity GroundItem { get; }
     public GameController GameController { get; }
     public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>(), new List<ItemData>());
     public ChargesData ChargeInfo { get; } = new ChargesData(0, 0, 0);
@@ -129,21 +130,26 @@ public partial class ItemData
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
     public ItemData(LabelOnGround queriedItem, GameController gc) :
-        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, gc, queriedItem)
+        this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, queriedItem.ItemOnGround, gc, queriedItem)
     {
     }
 
     public ItemData(Entity queriedItem, GameController gc) :
-        this(queriedItem, gc, null)
+        this(queriedItem, null, gc, null)
     {
     }
 
-    private ItemData(Entity itemEntity, GameController gc, LabelOnGround itemLabelOnGround)
+    public ItemData(Entity queriedItem, Entity groundItem, GameController gameController) : this(queriedItem, groundItem, gameController, null)
+    {
+    }
+
+    private ItemData(Entity itemEntity, Entity groundItem, GameController gc, LabelOnGround itemLabelOnGround)
     {
         if (itemEntity == null) return;
         var item = itemEntity;
 
         LabelOnGround = itemLabelOnGround;
+        GroundItem = groundItem;
         Entity = itemEntity;
         GameController = gc;
         Path = item.Path;
