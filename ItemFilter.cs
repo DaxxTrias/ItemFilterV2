@@ -15,7 +15,9 @@ public class ItemQuery<T> where T : ItemData
     public string RawQuery { get; set; }
     public Func<T, bool> CompiledQuery { get; set; }
     public int InitialLine { get; set; }
-    public bool FailedToCompile { get; set; } = false;
+    public bool FailedToCompile => Error != null;
+    public string Error { get; set; }
+
     public override string ToString()
     {
         return $"InitialLine({InitialLine}) Query({Query.Replace("\n", "")}) RawQuery({RawQuery.Replace("\n", "")}) Failed?({FailedToCompile})";
@@ -75,9 +77,9 @@ public class ItemQuery : ItemQuery<ItemData>
         {
             RawQuery = generic.RawQuery,
             CompiledQuery = generic.CompiledQuery,
-            FailedToCompile = generic.FailedToCompile,
             InitialLine = generic.InitialLine,
             Query = generic.Query,
+            Error = generic.Error,
         };
     }
 
@@ -110,7 +112,7 @@ public class ItemQuery : ItemQuery<ItemData>
                 RawQuery = rawQuery,
                 CompiledQuery = null,
                 InitialLine = line,
-                FailedToCompile = true // to use with stashie to output the same number of inputs and match up the syntax style correctly
+                Error = exMessage, // to use with stashie to output the same number of inputs and match up the syntax style correctly
             };
         }
     }
