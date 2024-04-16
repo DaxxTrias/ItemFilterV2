@@ -48,19 +48,14 @@ public partial class ItemData
         public bool Blighted { get; set; } = Blighted;
     }
 
-    public record MapStatData(int Quantity, int Rarity, int PackSize, int Quality)
+    public record MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, Occupation Occupation, MapTypeData Type)
     {
+        public bool IsMap { get; set; } = IsMap;
+        public int Tier { get; set; } = Tier;
         public int Quantity { get; set; } = Quantity;
         public int Rarity { get; set; } = Rarity;
         public int PackSize { get; set; } = PackSize;
         public int Quality { get; set; } = Quality;
-    }
-
-    public record MapData(bool IsMap, int Tier, MapStatData Stats, Occupation Occupation, MapTypeData Type)
-    {
-        public bool IsMap { get; set; } = IsMap;
-        public int Tier { get; set; } = Tier;
-        public MapStatData Stats { get; set; } = Stats;
         public Occupation Occupation { get; set; } = Occupation;
         public MapTypeData Type { get; set; } = Type;
     }
@@ -137,7 +132,7 @@ public partial class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
-    public MapData MapInfo { get; set; } = new MapData(false, 0, new MapStatData(0, 0, 0, 0), new Occupation(false, false, false, new MapElderOccupationData(false, false, false, false), new MapConquerorOccupationData(false, false, false, false)), new MapTypeData(false, false));
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, new Occupation(false, false, false, new MapElderOccupationData(false, false, false, false), new MapConquerorOccupationData(false, false, false, false)), new MapTypeData(false, false));
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -223,7 +218,7 @@ public partial class ItemData
         if (item.TryGetComponent<Quality>(out var quality))
         {
             ItemQuality = quality.ItemQuality;
-            MapInfo.Stats.Quality = quality.ItemQuality;
+            MapInfo.Quality = quality.ItemQuality;
         }
 
         if (item.TryGetComponent<Base>(out var baseComp))
@@ -308,9 +303,9 @@ public partial class ItemData
             #endregion
 
             #region MapStats
-            ApplyMapStatUpdate(GameStat.MapPackSizePct, x => MapInfo.Stats.PackSize += x);
-            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Stats.Quantity += x);
-            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Stats.Rarity += x);
+            ApplyMapStatUpdate(GameStat.MapPackSizePct, x => MapInfo.PackSize += x);
+            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Quantity += x);
+            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Rarity += x);
 
             void ApplyMapStatUpdate(GameStat wantedStat, Action<int> updateAction)
             {
