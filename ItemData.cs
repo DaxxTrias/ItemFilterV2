@@ -6,7 +6,6 @@ using ExileCore.Shared.Cache;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Runtime.CompilerServices;
@@ -19,6 +18,7 @@ public partial class ItemData
     private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
 
     #region MapInfo
+
     public record MapElderOccupationData(bool Enslaver, bool Eradicator, bool Constrictor, bool Purifier)
     {
         public bool Enslaver { get; set; } = Enslaver;
@@ -26,14 +26,16 @@ public partial class ItemData
         public bool Constrictor { get; set; } = Constrictor;
         public bool Purifier { get; set; } = Purifier;
     }
-    public record MapConquerorOccupationData(bool Baran, bool Veritania, bool AlHezmin, bool Drox)
+
+    public class MapConquerorOccupationData(bool Baran, bool Veritania, bool AlHezmin, bool Drox)
     {
         public bool Baran { get; set; } = Baran;
         public bool Veritania { get; set; } = Veritania;
         public bool AlHezmin { get; set; } = AlHezmin;
         public bool Drox { get; set; } = Drox;
     }
-    public record Occupation(bool Occupied, bool ElderBoss, bool ConquerorBoss, MapElderOccupationData Elder, MapConquerorOccupationData Conqueror)
+
+    public class Occupation(bool Occupied, bool ElderBoss, bool ConquerorBoss, MapElderOccupationData Elder, MapConquerorOccupationData Conqueror)
     {
         public bool Occupied { get; set; } = Occupied;
         public bool ElderBoss { get; set; } = ElderBoss;
@@ -42,13 +44,13 @@ public partial class ItemData
         public MapConquerorOccupationData Conqueror { get; set; } = Conqueror;
     }
 
-    public record MapTypeData(bool Normal, bool Blighted)
+    public class MapTypeData(bool Normal, bool Blighted)
     {
         public bool Normal { get; set; } = Normal;
         public bool Blighted { get; set; } = Blighted;
     }
 
-    public record MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, Occupation Occupation, MapTypeData Type)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, Occupation Occupation, MapTypeData Type)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -269,27 +271,11 @@ public partial class ItemData
                 { 4, () => MapInfo.Occupation.Conqueror.Drox = true }
             };
 
-            foreach (var mod in ModsInfo.ItemMods)
-            {
-                for (var index = 0; index < mod.ModRecord.StatNames.Length; index++)
-                {
-                    switch (mod.ModRecord.StatNames[index].MatchingStat)
-                    {
-                        case GameStat.MapElderBossVariation:
-                        {
-                            if (!elderOccupationMap.TryGetValue(mod.Values[index], out var action)) continue;
-                            action.Invoke();
-                            break;
-                        }
-                        case GameStat.MapContainsCitadel:
-                        {
-                            if (!conquerorOccupationMap.TryGetValue(mod.Values[index], out var action)) continue;
-                            action.Invoke();
-                            break;
-                        }
-                    }
-                }
-            }
+            elderOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapElderBossVariation], out var elderAction);
+            elderAction?.Invoke();
+
+            conquerorOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapContainsCitadel], out var conquerorAction);
+            conquerorAction?.Invoke();
 
             MapInfo.Occupation.ElderBoss = MapInfo.Occupation.Elder.Enslaver || MapInfo.Occupation.Elder.Eradicator || MapInfo.Occupation.Elder.Constrictor || MapInfo.Occupation.Elder.Purifier;
             MapInfo.Occupation.ConquerorBoss = MapInfo.Occupation.Conqueror.Baran || MapInfo.Occupation.Conqueror.Veritania || MapInfo.Occupation.Conqueror.AlHezmin || MapInfo.Occupation.Conqueror.Drox;
@@ -303,24 +289,9 @@ public partial class ItemData
             #endregion
 
             #region MapStats
-            ApplyMapStatUpdate(GameStat.MapPackSizePct, x => MapInfo.PackSize += x);
-            ApplyMapStatUpdate(GameStat.MapItemDropQuantityPct, x => MapInfo.Quantity += x);
-            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Rarity += x);
-
-            void ApplyMapStatUpdate(GameStat wantedStat, Action<int> updateAction)
-            {
-                foreach (var mod in ModsInfo.ItemMods)
-                {
-                    var index = mod.ModRecord.StatNames
-                        .Select((entry, index) => new { entry.MatchingStat, index })
-                        .FirstOrDefault(x => x.MatchingStat == wantedStat)?.index ?? -1;
-
-                    if (index != -1 && index < mod.Values.Count)
-                    {
-                        updateAction(mod.Values[index]);
-                    }
-                }
-            }
+            MapInfo.PackSize = GetItemStats(ModsInfo.ItemMods)[GameStat.MapPackSizePct];
+            MapInfo.Quantity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropQuantityPct];
+            MapInfo.Rarity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropRarityPct];
             #endregion
         }
 
