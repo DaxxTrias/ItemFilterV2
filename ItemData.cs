@@ -19,38 +19,29 @@ public partial class ItemData
 
     #region MapInfo
 
-    public record MapElderOccupationData(bool Enslaver, bool Eradicator, bool Constrictor, bool Purifier)
+    public class MapOccupationData(bool ElderBoss, bool Enslaver, bool Eradicator, bool Constrictor, bool Purifier, bool ConquerorBoss, bool Baran, bool Veritania, bool AlHezmin, bool Drox)
     {
+        public bool ElderBoss { get; set; } = ElderBoss;
         public bool Enslaver { get; set; } = Enslaver;
         public bool Eradicator { get; set; } = Eradicator;
         public bool Constrictor { get; set; } = Constrictor;
         public bool Purifier { get; set; } = Purifier;
-    }
-
-    public class MapConquerorOccupationData(bool Baran, bool Veritania, bool AlHezmin, bool Drox)
-    {
+        public bool ConquerorBoss { get; set; } = ConquerorBoss;
         public bool Baran { get; set; } = Baran;
         public bool Veritania { get; set; } = Veritania;
         public bool AlHezmin { get; set; } = AlHezmin;
         public bool Drox { get; set; } = Drox;
     }
 
-    public class Occupation(bool Occupied, bool ElderBoss, bool ConquerorBoss, MapElderOccupationData Elder, MapConquerorOccupationData Conqueror)
-    {
-        public bool Occupied { get; set; } = Occupied;
-        public bool ElderBoss { get; set; } = ElderBoss;
-        public bool ConquerorBoss { get; set; } = ConquerorBoss;
-        public MapElderOccupationData Elder { get; set; } = Elder;
-        public MapConquerorOccupationData Conqueror { get; set; } = Conqueror;
-    }
-
-    public class MapTypeData(bool Normal, bool Blighted)
+    public class MapTypeData(bool Normal, bool Blighted, bool blightRavaged, bool Uber)
     {
         public bool Normal { get; set; } = Normal;
         public bool Blighted { get; set; } = Blighted;
+        public bool BlightRavaged { get; set; } = blightRavaged;
+        public bool Uber { get; set; } = Uber;
     }
 
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, Occupation Occupation, MapTypeData Type)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -58,7 +49,8 @@ public partial class ItemData
         public int Rarity { get; set; } = Rarity;
         public int PackSize { get; set; } = PackSize;
         public int Quality { get; set; } = Quality;
-        public Occupation Occupation { get; set; } = Occupation;
+        public bool Occupied { get; set; } = Occupied;
+        public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
         public MapTypeData Type { get; set; } = Type;
     }
     #endregion
@@ -134,7 +126,7 @@ public partial class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
-    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, new Occupation(false, false, false, new MapElderOccupationData(false, false, false, false), new MapConquerorOccupationData(false, false, false, false)), new MapTypeData(false, false));
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false));
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -257,18 +249,18 @@ public partial class ItemData
 
             var elderOccupationMap = new Dictionary<int, Action>
             {
-                { 1, () => MapInfo.Occupation.Elder.Enslaver = true },
-                { 2, () => MapInfo.Occupation.Elder.Eradicator = true },
-                { 3, () => MapInfo.Occupation.Elder.Constrictor = true },
-                { 4, () => MapInfo.Occupation.Elder.Purifier = true }
+                { 1, () => MapInfo.OccupiedBy.Enslaver = true },
+                { 2, () => MapInfo.OccupiedBy.Eradicator = true },
+                { 3, () => MapInfo.OccupiedBy.Constrictor = true },
+                { 4, () => MapInfo.OccupiedBy.Purifier = true }
             };
 
             var conquerorOccupationMap = new Dictionary<int, Action>
             {
-                { 1, () => MapInfo.Occupation.Conqueror.Baran = true },
-                { 2, () => MapInfo.Occupation.Conqueror.Veritania = true },
-                { 3, () => MapInfo.Occupation.Conqueror.AlHezmin = true },
-                { 4, () => MapInfo.Occupation.Conqueror.Drox = true }
+                { 1, () => MapInfo.OccupiedBy.Baran = true },
+                { 2, () => MapInfo.OccupiedBy.Veritania = true },
+                { 3, () => MapInfo.OccupiedBy.AlHezmin = true },
+                { 4, () => MapInfo.OccupiedBy.Drox = true }
             };
 
             elderOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapElderBossVariation], out var elderAction);
@@ -277,15 +269,17 @@ public partial class ItemData
             conquerorOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapContainsCitadel], out var conquerorAction);
             conquerorAction?.Invoke();
 
-            MapInfo.Occupation.ElderBoss = MapInfo.Occupation.Elder.Enslaver || MapInfo.Occupation.Elder.Eradicator || MapInfo.Occupation.Elder.Constrictor || MapInfo.Occupation.Elder.Purifier;
-            MapInfo.Occupation.ConquerorBoss = MapInfo.Occupation.Conqueror.Baran || MapInfo.Occupation.Conqueror.Veritania || MapInfo.Occupation.Conqueror.AlHezmin || MapInfo.Occupation.Conqueror.Drox;
-            MapInfo.Occupation.Occupied = MapInfo.Occupation.ElderBoss || MapInfo.Occupation.ConquerorBoss;
+            MapInfo.OccupiedBy.ElderBoss = MapInfo.OccupiedBy.Enslaver || MapInfo.OccupiedBy.Eradicator || MapInfo.OccupiedBy.Constrictor || MapInfo.OccupiedBy.Purifier;
+            MapInfo.OccupiedBy.ConquerorBoss = MapInfo.OccupiedBy.Baran || MapInfo.OccupiedBy.Veritania || MapInfo.OccupiedBy.AlHezmin || MapInfo.OccupiedBy.Drox;
+            MapInfo.Occupied = MapInfo.OccupiedBy.ElderBoss || MapInfo.OccupiedBy.ConquerorBoss;
 
             #endregion
 
             #region MapType
-            MapInfo.Type.Blighted = ModsInfo.ItemMods.Any(m => m.Name.Contains("InfectedMap"));
-            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupation.Occupied;
+            MapInfo.Type.BlightRavaged = ModsInfo.ItemMods.Any(m => m.Name == "UberInfectedMap");
+            MapInfo.Type.Blighted = ModsInfo.ItemMods.Any(m => m.Name == "InfectedMap") || MapInfo.Type.BlightRavaged;
+            MapInfo.Type.Uber = ModsInfo.ItemMods.Any(itemMod => itemMod.ModRecord.StatNames.Any(record => record.MatchingStat == GameStat.MapIsUberMap));
+            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupied && !MapInfo.Type.Uber;
             #endregion
 
             #region MapStats
