@@ -6,6 +6,7 @@ using ExileCore.Shared.Cache;
 using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Runtime.CompilerServices;
@@ -16,6 +17,55 @@ namespace ItemFilterLibrary;
 public partial class ItemData
 {
     private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
+
+    #region MapInfo
+    public record MapElderOccupationData(bool Enslaver, bool Eradicator, bool Constrictor, bool Purifier)
+    {
+        public bool Enslaver { get; set; } = Enslaver;
+        public bool Eradicator { get; set; } = Eradicator;
+        public bool Constrictor { get; set; } = Constrictor;
+        public bool Purifier { get; set; } = Purifier;
+    }
+    public record MapConquerorOccupationData(bool Baran, bool Veritania, bool AlHezmin, bool Drox)
+    {
+        public bool Baran { get; set; } = Baran;
+        public bool Veritania { get; set; } = Veritania;
+        public bool AlHezmin { get; set; } = AlHezmin;
+        public bool Drox { get; set; } = Drox;
+    }
+    public record Occupation(bool Occupied, bool ElderBoss, bool ConquerorBoss, MapElderOccupationData Elder, MapConquerorOccupationData Conqueror)
+    {
+        public bool Occupied { get; set; } = Occupied;
+        public bool ElderBoss { get; set; } = ElderBoss;
+        public bool ConquerorBoss { get; set; } = ConquerorBoss;
+        public MapElderOccupationData Elder { get; set; } = Elder;
+        public MapConquerorOccupationData Conqueror { get; set; } = Conqueror;
+    }
+
+    public record MapTypeData(bool Normal, bool Blighted)
+    {
+        public bool Normal { get; set; } = Normal;
+        public bool Blighted { get; set; } = Blighted;
+    }
+
+    public record MapStatData(int Quantity, int Rarity, int PackSize, int Quality)
+    {
+        public int Quantity { get; set; } = Quantity;
+        public int Rarity { get; set; } = Rarity;
+        public int PackSize { get; set; } = PackSize;
+        public int Quality { get; set; } = Quality;
+    }
+
+    public record MapData(bool IsMap, int Tier, MapStatData Stats, Occupation Occupation, MapTypeData Type)
+    {
+        public bool IsMap { get; set; } = IsMap;
+        public int Tier { get; set; } = Tier;
+        public MapStatData Stats { get; set; } = Stats;
+        public Occupation Occupation { get; set; } = Occupation;
+        public MapTypeData Type { get; set; } = Type;
+    }
+    #endregion
+
     public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType, bool IsGem);
 
     public record StackData(int Count, int MaxCount);
@@ -47,7 +97,6 @@ public partial class ItemData
     public int VeiledModCount { get; } = 0;
     public int FracturedModCount { get; } = 0;
     public int ItemLevel { get; } = 0;
-    public int MapTier { get; } = 0;
     public int DeliriumStacks { get; } = 0;
     public int HeistContractReqJobLevel { get; } = 0;
     public int ScourgeTier { get; } = 0;
@@ -62,9 +111,6 @@ public partial class ItemData
     public bool IsWarlord { get; } = false;
     public bool IsInfluenced { get; } = false;
     public bool IsSynthesised { get; } = false;
-    public bool IsBlightMap { get; } = false;
-    public bool IsMap { get; } = false;
-    public bool IsElderGuardianMap { get; } = false;
     public bool Enchanted { get; } = false;
     public ItemRarity Rarity { get; } = ItemRarity.Normal;
     public List<string> ModsNames { get; } = new List<string>();
@@ -91,6 +137,7 @@ public partial class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
+    public MapData MapInfo { get; set; } = new MapData(false, 0, new MapStatData(0, 0, 0, 0), new Occupation(false, false, false, new MapElderOccupationData(false, false, false, false), new MapConquerorOccupationData(false, false, false, false)), new MapTypeData(false, false));
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -176,6 +223,7 @@ public partial class ItemData
         if (item.TryGetComponent<Quality>(out var quality))
         {
             ItemQuality = quality.ItemQuality;
+            MapInfo.Stats.Quality = quality.ItemQuality;
         }
 
         if (item.TryGetComponent<Base>(out var baseComp))
@@ -206,9 +254,79 @@ public partial class ItemData
             ModsInfo = new ModsData(modsComp.ItemMods, modsComp.EnchantedMods, modsComp.ExplicitMods, modsComp.FracturedMods, modsComp.ImplicitMods, modsComp.ScourgeMods, modsComp.SynthesisMods, modsComp.CrucibleMods);
             ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
             VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
-            IsBlightMap = ModsInfo.ItemMods.Any(m => m.Name.Contains("InfectedMap"));
             DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name.Contains("AfflictionMapReward"));
-            IsElderGuardianMap = ModsInfo.ItemMods.Any(m => m.Name.Contains("MapElderContainsBoss"));
+
+            #region MapOccupation
+
+            var elderOccupationMap = new Dictionary<int, Action>
+            {
+                { 1, () => MapInfo.Occupation.Elder.Enslaver = true },
+                { 2, () => MapInfo.Occupation.Elder.Eradicator = true },
+                { 3, () => MapInfo.Occupation.Elder.Constrictor = true },
+                { 4, () => MapInfo.Occupation.Elder.Purifier = true }
+            };
+
+            var conquerorOccupationMap = new Dictionary<int, Action>
+            {
+                { 1, () => MapInfo.Occupation.Conqueror.Baran = true },
+                { 2, () => MapInfo.Occupation.Conqueror.Veritania = true },
+                { 3, () => MapInfo.Occupation.Conqueror.AlHezmin = true },
+                { 4, () => MapInfo.Occupation.Conqueror.Drox = true }
+            };
+
+            foreach (var mod in ModsInfo.ItemMods)
+            {
+                for (var index = 0; index < mod.ModRecord.StatNames.Length; index++)
+                {
+                    switch (mod.ModRecord.StatNames[index].MatchingStat)
+                    {
+                        case GameStat.MapElderBossVariation:
+                        {
+                            if (!elderOccupationMap.TryGetValue(mod.Values[index], out var action)) continue;
+                            action.Invoke();
+                            break;
+                        }
+                        case GameStat.MapContainsCitadel:
+                        {
+                            if (!conquerorOccupationMap.TryGetValue(mod.Values[index], out var action)) continue;
+                            action.Invoke();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            MapInfo.Occupation.ElderBoss = MapInfo.Occupation.Elder.Enslaver || MapInfo.Occupation.Elder.Eradicator || MapInfo.Occupation.Elder.Constrictor || MapInfo.Occupation.Elder.Purifier;
+            MapInfo.Occupation.ConquerorBoss = MapInfo.Occupation.Conqueror.Baran || MapInfo.Occupation.Conqueror.Veritania || MapInfo.Occupation.Conqueror.AlHezmin || MapInfo.Occupation.Conqueror.Drox;
+            MapInfo.Occupation.Occupied = MapInfo.Occupation.ElderBoss || MapInfo.Occupation.ConquerorBoss;
+
+            #endregion
+
+            #region MapType
+            MapInfo.Type.Blighted = ModsInfo.ItemMods.Any(m => m.Name.Contains("InfectedMap"));
+            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupation.Occupied;
+            #endregion
+
+            #region MapStats
+            ApplyMapStatUpdate(GameStat.MapPackSizePct, x => MapInfo.Stats.PackSize += x);
+            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Stats.Quantity += x);
+            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Stats.Rarity += x);
+
+            void ApplyMapStatUpdate(GameStat wantedStat, Action<int> updateAction)
+            {
+                foreach (var mod in ModsInfo.ItemMods)
+                {
+                    var index = mod.ModRecord.StatNames
+                        .Select((entry, index) => new { entry.MatchingStat, index })
+                        .FirstOrDefault(x => x.MatchingStat == wantedStat)?.index ?? -1;
+
+                    if (index != -1 && index < mod.Values.Count)
+                    {
+                        updateAction(mod.Values[index]);
+                    }
+                }
+            }
+            #endregion
         }
 
         if (item.TryGetComponent<Sockets>(out var socketComp))
@@ -231,8 +349,8 @@ public partial class ItemData
 
         if (item.TryGetComponent<ExileCore.PoEMemory.Components.Map>(out var mapComp))
         {
-            MapTier = mapComp.Tier;
-            IsMap = true;
+            MapInfo.Tier = mapComp.Tier;
+            MapInfo.IsMap = true;
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
