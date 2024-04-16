@@ -268,29 +268,41 @@ public partial class ItemData
         {
             MapInfo.Tier = mapComp.Tier;
             MapInfo.IsMap = true;
+            var itemStats = GetItemStats(ModsInfo.ItemMods);
 
             #region MapOccupation
-            var elderOccupationMap = new Dictionary<int, Action>
+
+            switch (itemStats[GameStat.MapElderBossVariation])
             {
-                { 1, () => MapInfo.OccupiedBy.Enslaver = true },
-                { 2, () => MapInfo.OccupiedBy.Eradicator = true },
-                { 3, () => MapInfo.OccupiedBy.Constrictor = true },
-                { 4, () => MapInfo.OccupiedBy.Purifier = true }
-            };
+                case 1:
+                    MapInfo.OccupiedBy.Enslaver = true;
+                    break;
+                case 2:
+                    MapInfo.OccupiedBy.Eradicator = true;
+                    break;
+                case 3:
+                    MapInfo.OccupiedBy.Constrictor = true;
+                    break;
+                case 4:
+                    MapInfo.OccupiedBy.Purifier = true;
+                    break;
+            }
 
-            var conquerorOccupationMap = new Dictionary<int, Action>
+            switch (itemStats[GameStat.MapContainsCitadel])
             {
-                { 1, () => MapInfo.OccupiedBy.Baran = true },
-                { 2, () => MapInfo.OccupiedBy.Veritania = true },
-                { 3, () => MapInfo.OccupiedBy.AlHezmin = true },
-                { 4, () => MapInfo.OccupiedBy.Drox = true }
-            };
-
-            elderOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapElderBossVariation], out var elderAction);
-            elderAction?.Invoke();
-
-            conquerorOccupationMap.TryGetValue(GetItemStats(ModsInfo.ItemMods)[GameStat.MapContainsCitadel], out var conquerorAction);
-            conquerorAction?.Invoke();
+                case 1:
+                    MapInfo.OccupiedBy.Baran = true;
+                    break;
+                case 2:
+                    MapInfo.OccupiedBy.Veritania = true;
+                    break;
+                case 3:
+                    MapInfo.OccupiedBy.AlHezmin = true;
+                    break;
+                case 4:
+                    MapInfo.OccupiedBy.Drox = true;
+                    break;
+            }
 
             MapInfo.OccupiedBy.ElderBoss = MapInfo.OccupiedBy.Enslaver || MapInfo.OccupiedBy.Eradicator || MapInfo.OccupiedBy.Constrictor || MapInfo.OccupiedBy.Purifier;
             MapInfo.OccupiedBy.ConquerorBoss = MapInfo.OccupiedBy.Baran || MapInfo.OccupiedBy.Veritania || MapInfo.OccupiedBy.AlHezmin || MapInfo.OccupiedBy.Drox;
@@ -302,9 +314,9 @@ public partial class ItemData
             MapInfo.Type.Uber = ModsInfo.ItemMods.Any(itemMod => itemMod.ModRecord.StatNames.Any(record => record.MatchingStat == GameStat.MapIsUberMap));
             MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupied && !MapInfo.Type.Uber;
 
-            MapInfo.PackSize = GetItemStats(ModsInfo.ItemMods)[GameStat.MapPackSizePct];
-            MapInfo.Quantity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropQuantityPct];
-            MapInfo.Rarity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropRarityPct];
+            MapInfo.PackSize = itemStats[GameStat.MapPackSizePct];
+            MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
+            MapInfo.Rarity = itemStats[GameStat.MapItemDropRarityPct];
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
