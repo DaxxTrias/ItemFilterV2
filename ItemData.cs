@@ -244,9 +244,32 @@ public partial class ItemData
             ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
             VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
             DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name.Contains("AfflictionMapReward"));
+        }
+
+        if (item.TryGetComponent<Sockets>(out var socketComp))
+        {
+            // issue to be resolved in core, if a corrupted ring with sockets gets a new implicit it will still have the component but the component logic will throw an exception
+            if (socketComp.NumberOfSockets > 0)
+                SocketInfo = new SocketData(socketComp.LargestLinkSize, socketComp.NumberOfSockets, socketComp.Links, socketComp.SocketGroup,
+                    socketComp.SocketedGems.Select(x => new ItemData(x.GemEntity, GameController)).ToList());
+        }
+
+        if (item.TryGetComponent<SkillGem>(out var gemComp))
+        {
+            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, gemComp.QualityType, true);
+        }
+
+        if (item.TryGetComponent<Stack>(out var stackComp))
+        {
+            StackInfo = new StackData(stackComp.Size, stackComp.Info.MaxStackSize);
+        }
+
+        if (item.TryGetComponent<ExileCore.PoEMemory.Components.Map>(out var mapComp))
+        {
+            MapInfo.Tier = mapComp.Tier;
+            MapInfo.IsMap = true;
 
             #region MapOccupation
-
             var elderOccupationMap = new Dictionary<int, Action>
             {
                 { 1, () => MapInfo.OccupiedBy.Enslaver = true },
@@ -272,45 +295,16 @@ public partial class ItemData
             MapInfo.OccupiedBy.ElderBoss = MapInfo.OccupiedBy.Enslaver || MapInfo.OccupiedBy.Eradicator || MapInfo.OccupiedBy.Constrictor || MapInfo.OccupiedBy.Purifier;
             MapInfo.OccupiedBy.ConquerorBoss = MapInfo.OccupiedBy.Baran || MapInfo.OccupiedBy.Veritania || MapInfo.OccupiedBy.AlHezmin || MapInfo.OccupiedBy.Drox;
             MapInfo.Occupied = MapInfo.OccupiedBy.ElderBoss || MapInfo.OccupiedBy.ConquerorBoss;
-
             #endregion
 
-            #region MapType
             MapInfo.Type.BlightRavaged = ModsInfo.ItemMods.Any(m => m.Name == "UberInfectedMap");
             MapInfo.Type.Blighted = ModsInfo.ItemMods.Any(m => m.Name == "InfectedMap") || MapInfo.Type.BlightRavaged;
             MapInfo.Type.Uber = ModsInfo.ItemMods.Any(itemMod => itemMod.ModRecord.StatNames.Any(record => record.MatchingStat == GameStat.MapIsUberMap));
             MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupied && !MapInfo.Type.Uber;
-            #endregion
 
-            #region MapStats
             MapInfo.PackSize = GetItemStats(ModsInfo.ItemMods)[GameStat.MapPackSizePct];
             MapInfo.Quantity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropQuantityPct];
             MapInfo.Rarity = GetItemStats(ModsInfo.ItemMods)[GameStat.MapItemDropRarityPct];
-            #endregion
-        }
-
-        if (item.TryGetComponent<Sockets>(out var socketComp))
-        {
-            // issue to be resolved in core, if a corrupted ring with sockets gets a new implicit it will still have the component but the component logic will throw an exception
-            if (socketComp.NumberOfSockets > 0)
-                SocketInfo = new SocketData(socketComp.LargestLinkSize, socketComp.NumberOfSockets, socketComp.Links, socketComp.SocketGroup,
-                    socketComp.SocketedGems.Select(x => new ItemData(x.GemEntity, GameController)).ToList());
-        }
-
-        if (item.TryGetComponent<SkillGem>(out var gemComp))
-        {
-            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, gemComp.QualityType, true);
-        }
-
-        if (item.TryGetComponent<Stack>(out var stackComp))
-        {
-            StackInfo = new StackData(stackComp.Size, stackComp.Info.MaxStackSize);
-        }
-
-        if (item.TryGetComponent<ExileCore.PoEMemory.Components.Map>(out var mapComp))
-        {
-            MapInfo.Tier = mapComp.Tier;
-            MapInfo.IsMap = true;
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
