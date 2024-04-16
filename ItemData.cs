@@ -304,7 +304,7 @@ public partial class ItemData
 
             #region MapStats
             ApplyMapStatUpdate(GameStat.MapPackSizePct, x => MapInfo.PackSize += x);
-            ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Quantity += x);
+            ApplyMapStatUpdate(GameStat.MapItemDropQuantityPct, x => MapInfo.Quantity += x);
             ApplyMapStatUpdate(GameStat.MapItemDropRarityPct, x => MapInfo.Rarity += x);
 
             void ApplyMapStatUpdate(GameStat wantedStat, Action<int> updateAction)
