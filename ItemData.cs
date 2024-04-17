@@ -229,6 +229,7 @@ public partial class ItemData
             IsRedeemer = baseComp.isRedeemer;
             IsCorrupted = baseComp.isCorrupted;
             IsInfluenced = IsCrusader || IsRedeemer || IsWarlord || IsHunter || IsShaper || IsElder;
+            ItemLevel = baseComp.CurrencyItemLevel; //give Mods priority, but still set if possible
         }
 
         if (item.TryGetComponent<Mods>(out var modsComp))
