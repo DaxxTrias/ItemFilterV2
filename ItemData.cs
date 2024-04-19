@@ -41,7 +41,7 @@ public partial class ItemData
         public bool Uber { get; set; } = Uber;
     }
 
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -49,6 +49,9 @@ public partial class ItemData
         public int Rarity { get; set; } = Rarity;
         public int PackSize { get; set; } = PackSize;
         public int Quality { get; set; } = Quality;
+        public int MoreMaps { get; set; } = MoreMaps;
+        public int MoreScarabs { get; set; } = MoreScarabs;
+        public int MoreCurrency { get; set; } = MoreCurrency;
         public bool Occupied { get; set; } = Occupied;
         public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
         public MapTypeData Type { get; set; } = Type;
@@ -126,7 +129,7 @@ public partial class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
-    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false));
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false));
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -318,6 +321,9 @@ public partial class ItemData
             MapInfo.PackSize = itemStats[GameStat.MapPackSizePct];
             MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
             MapInfo.Rarity = itemStats[GameStat.MapItemDropRarityPct];
+            MapInfo.MoreMaps = itemStats[GameStat.MapMapItemDropChancePctFinalFromUberMod];
+            MapInfo.MoreScarabs = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
+            MapInfo.MoreCurrency = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
