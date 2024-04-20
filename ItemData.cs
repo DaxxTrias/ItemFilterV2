@@ -1,6 +1,7 @@
 using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
+using ExileCore.PoEMemory.FilesInMemory;
 using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Cache;
 using ExileCore.Shared.Enums;
@@ -57,6 +58,8 @@ public partial class ItemData
         public MapTypeData Type { get; set; } = Type;
     }
     #endregion
+
+    public record NecropolisCorpseData(NecropolisCraftingMod CraftingMod, MonsterVariety Monster);
 
     public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType, bool IsGem);
 
@@ -122,6 +125,7 @@ public partial class ItemData
     public Entity Entity { get; }
     public Entity GroundItem { get; }
     public GameController GameController { get; }
+    public NecropolisCorpseData CorpseInfo { get; } = new NecropolisCorpseData(new NecropolisCraftingMod(), new MonsterVariety());
     public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>(), new List<ItemData>());
     public ChargesData ChargeInfo { get; } = new ChargesData(0, 0, 0);
     public FlaskData FlaskInfo { get; } = new FlaskData(0, 0, new Dictionary<GameStat, int>());
@@ -248,6 +252,12 @@ public partial class ItemData
             ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
             VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
             DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name.Contains("AfflictionMapReward"));
+        }
+
+        if (item.TryGetComponent<NecropolisCorpse>(out var corpseComp))
+        {
+            ItemLevel = corpseComp.Level;
+            CorpseInfo = new NecropolisCorpseData(corpseComp.CraftingMod, corpseComp.MonsterVariety);
         }
 
         if (item.TryGetComponent<Sockets>(out var socketComp))
