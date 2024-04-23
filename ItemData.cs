@@ -332,8 +332,8 @@ public partial class ItemData
             MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
             MapInfo.Rarity = itemStats[GameStat.MapItemDropRarityPct];
             MapInfo.MoreMaps = itemStats[GameStat.MapMapItemDropChancePctFinalFromUberMod];
-            MapInfo.MoreScarabs = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
-            MapInfo.MoreCurrency = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
+            MapInfo.MoreScarabs = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
+            MapInfo.MoreCurrency = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
