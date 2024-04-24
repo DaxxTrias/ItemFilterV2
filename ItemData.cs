@@ -323,10 +323,10 @@ public partial class ItemData
             MapInfo.Occupied = MapInfo.OccupiedBy.ElderBoss || MapInfo.OccupiedBy.ConquerorBoss;
             #endregion
 
-            MapInfo.Type.BlightRavaged = ModsInfo.ItemMods.Any(m => m.Name == "UberInfectedMap");
-            MapInfo.Type.Blighted = ModsInfo.ItemMods.Any(m => m.Name == "InfectedMap") || MapInfo.Type.BlightRavaged;
-            MapInfo.Type.Uber = ModsInfo.ItemMods.Any(itemMod => itemMod.ModRecord.StatNames.Any(record => record.MatchingStat == GameStat.MapIsUberMap));
-            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Occupied && !MapInfo.Type.Uber;
+            MapInfo.Type.BlightRavaged = itemStats[GameStat.IsUberBlightedMap] == 1;
+            MapInfo.Type.Blighted = itemStats[GameStat.IsBlightedMap] == 1;
+            MapInfo.Type.Uber = itemStats[GameStat.MapIsUberMap] == 1;
+            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Type.BlightRavaged && !MapInfo.Occupied && !MapInfo.Type.Uber;
 
             MapInfo.PackSize = itemStats[GameStat.MapPackSizePct];
             MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
