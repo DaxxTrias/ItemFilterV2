@@ -133,6 +133,7 @@ public partial class ItemData
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
+    public ExpeditionSaga ExpeditionInfo { get; } = new ExpeditionSaga();
     public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false));
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
@@ -400,6 +401,11 @@ public partial class ItemData
         if (item.TryGetComponent<Shield>(out var shieldComp))
         {
             ShieldBlockChance = shieldComp.ChanceToBlock;
+        }
+
+        if (item.TryGetComponent<ExpeditionSaga>(out var expeditionComp))
+        {
+            ExpeditionInfo = expeditionComp;
         }
 
         _estimatedValue = new Lazy<double>(() =>
