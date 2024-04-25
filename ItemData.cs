@@ -419,7 +419,17 @@ public partial class ItemData
         }, LazyThreadSafetyMode.PublicationOnly);
     }
 
+    public bool HasAnyModSet(string[][] sets) => HasAnyModSet(ModsInfo.ExplicitMods, sets);
+
+    public bool HasAnyModSet(IEnumerable<ItemMod> mods, string[][] sets)
+    {
+        return sets.Any(set => set.All(modName => mods.Any(mod => mod.RawName.Equals(modName, StringComparison.OrdinalIgnoreCase))));
+    }
+
+    public bool HasAnyMatchingConditionSet(bool[][] sets) => sets.Any(set => set.All(condition => condition));
+
     public bool IsUnownedItem(Func<ItemData, bool> criterion) => criterion(this) && !PlayerInfo.OwnedItems.Any(criterion);
+
     public bool IsUnownedGem(Func<ItemData, bool> criterion) => GemInfo.IsGem && criterion(this) && !PlayerInfo.OwnedGems.Any(criterion);
 
     public bool HasUnorderedSocketGroup(string groupText) => HasUnorderedSocketGroup(groupText, false);
