@@ -243,16 +243,27 @@ public partial class ItemData
         if (item.TryGetComponent<Mods>(out var modsComp))
         {
             Rarity = modsComp.ItemRarity;
+            var affixSlots = GetTotalAffixSlots();
             IsIdentified = modsComp.Identified;
             ItemLevel = modsComp.ItemLevel;
             Name = string.IsNullOrWhiteSpace(modsComp.UniqueName) ? Name : modsComp.UniqueName;
             FracturedModCount = modsComp.CountFractured;
             IsSynthesised = modsComp.Synthesised;
             Enchanted = modsComp.EnchantedMods?.Count > 0;
+
             ModsInfo = new ModsData(modsComp.ItemMods, modsComp.EnchantedMods, modsComp.ExplicitMods, modsComp.FracturedMods, modsComp.ImplicitMods, modsComp.ScourgeMods, modsComp.SynthesisMods, modsComp.CrucibleMods);
+            if (IsIdentified)
+            {
+                ModsInfo.OpenPrefixCount = Math.Max(0, affixSlots - ModsInfo.Prefixes.Count + ItemStats[GameStat.LocalMaximumPrefixesAllowed]);
+                ModsInfo.OpenSuffixCount = Math.Max(0, affixSlots - ModsInfo.Suffixes.Count + ItemStats[GameStat.LocalMaximumSuffixesAllowed]);
+                ModsInfo.HasOpenPrefix = ModsInfo.OpenPrefixCount >= 1;
+                ModsInfo.HasOpenSuffix = ModsInfo.OpenSuffixCount >= 1;
+            }
             ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
             VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
             DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name.Contains("AfflictionMapReward"));
+            
+
         }
 
         if (item.TryGetComponent<NecropolisCorpse>(out var corpseComp))
@@ -419,6 +430,16 @@ public partial class ItemData
         }, LazyThreadSafetyMode.PublicationOnly);
     }
 
+    public int GetTotalAffixSlots() => Rarity switch
+    {
+        ItemRarity.Magic => 1,
+        ItemRarity.Rare => ClassName switch
+        {
+            "Jewel" => 2,
+            _ => 3
+        },
+        _ => 0
+    };
     public bool HasAnyModSet(string[][] sets) => HasAnyModSet(ModsInfo.ExplicitMods, sets);
 
     public bool HasAnyModSet(IEnumerable<ItemMod> mods, string[][] sets)

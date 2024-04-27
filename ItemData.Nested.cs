@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ItemFilterLibrary;
 
@@ -96,8 +96,11 @@ public partial class ItemData
             { CrucibleMods, "CrucibleMods" }
         };
 
-
         public IReadOnlyCollection<ItemMod> Prefixes { get; } = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Prefix).ToList();
         public IReadOnlyCollection<ItemMod> Suffixes { get; } = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Suffix).ToList();
+        public int OpenPrefixCount { get; set; } = -1;
+        public int OpenSuffixCount { get; set; } = -1;
+        public bool HasOpenPrefix { get; set; } = false;
+        public bool HasOpenSuffix { get; set; } = false;
     }
 }
