@@ -42,7 +42,7 @@ public partial class ItemData
         public bool Uber { get; set; } = Uber;
     }
 
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool BonusCompleted, bool Completed, WorldArea Area)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool IsBonusCompleted, bool IsCompleted, WorldArea Area)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -56,8 +56,8 @@ public partial class ItemData
         public bool Occupied { get; set; } = Occupied;
         public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
         public MapTypeData Type { get; set; } = Type;
-        public bool BonusCompleted { get; set; } = BonusCompleted;
-        public bool Completed { get; set; } = Completed;
+        public bool IsBonusCompleted { get; set; } = IsBonusCompleted;
+        public bool IsCompleted { get; set; } = IsCompleted;
         public WorldArea Area { get; set; } = Area;
     }
     #endregion
@@ -350,8 +350,8 @@ public partial class ItemData
             MapInfo.MoreScarabs = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
             MapInfo.MoreCurrency = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
             MapInfo.Area = mapComp.Area;
-            MapInfo.BonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area) ? true : false;
-            MapInfo.Completed = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area) ? true : false;
+            MapInfo.IsBonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area) ? true : false;
+            MapInfo.IsCompleted = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area) ? true : false;
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
