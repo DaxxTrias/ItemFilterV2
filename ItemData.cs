@@ -42,7 +42,7 @@ public partial class ItemData
         public bool Uber { get; set; } = Uber;
     }
 
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool BonusCompleted, bool Completed, WorldArea Area)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -56,6 +56,9 @@ public partial class ItemData
         public bool Occupied { get; set; } = Occupied;
         public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
         public MapTypeData Type { get; set; } = Type;
+        public bool BonusCompleted { get; set; } = BonusCompleted;
+        public bool Completed { get; set; } = Completed;
+        public WorldArea Area { get; set; } = Area;
     }
     #endregion
 
@@ -134,7 +137,7 @@ public partial class ItemData
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
     public ExpeditionSaga ExpeditionInfo { get; } = new ExpeditionSaga();
-    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false));
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false), false, false, null);
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -346,6 +349,9 @@ public partial class ItemData
             MapInfo.MoreMaps = itemStats[GameStat.MapMapItemDropChancePctFinalFromUberMod];
             MapInfo.MoreScarabs = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
             MapInfo.MoreCurrency = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
+            MapInfo.Area = mapComp.Area;
+            MapInfo.BonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area) ? true : false;
+            MapInfo.Completed = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area) ? true : false;
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
