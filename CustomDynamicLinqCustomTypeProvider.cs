@@ -37,15 +37,18 @@ public sealed class CustomDynamicLinqCustomTypeProvider :
         return ResolveTypeBySimpleName(AppDomain.CurrentDomain.GetAssemblies(), simpleTypeName);
     }
 
-    private HashSet<Type> GetCustomTypesInternal() => new(
-        FindTypesMarkedWithDynamicLinqTypeAttribute(AppDomain.CurrentDomain.GetAssemblies())
+    private HashSet<Type> GetCustomTypesInternal() =>
+    [
+
+        ..FindTypesMarkedWithDynamicLinqTypeAttribute(AppDomain.CurrentDomain.GetAssemblies())
             .Concat(typeof(CustomDynamicLinqCustomTypeProvider).Assembly.GetExportedTypes())
             .Concat(typeof(GameStat).Assembly.GetExportedTypes().Where(x => x.Name.Length > 4))
             .Append(typeof(Dictionary<,>))
             .Append(typeof(ILookup<,>))
             .Append(typeof(Vector2))
-            .Append(typeof(Vector3))
-        );
+            .Append(typeof(Vector3)),
+
+    ];
 
     private Dictionary<Type, List<MethodInfo>> GetExtensionMethodsInternal()
     {

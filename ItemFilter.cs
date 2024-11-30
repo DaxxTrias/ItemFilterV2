@@ -147,7 +147,7 @@ public class ItemFilter : ItemFilter<ItemData>
             compiledQueries.Add((ItemQuery.Load<T>(query, rawQuery, initialLine), isNegative));
         }
 
-        DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterFilePath.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
+        DebugWindow.LogMsg($"[ItemQueryProcessor] Processed {filterFilePath.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
         return compiledQueries;
     }
 
@@ -155,7 +155,7 @@ public class ItemFilter : ItemFilter<ItemData>
     {
         string section = null;
         string rawSection = null;
-        bool isNegative = false;
+        var isNegative = false;
         var sectionStartLine = 0;
         var lines = new List<(string section, string, int sectionStartLine, bool isNegative)>();
 
@@ -214,7 +214,7 @@ public class ItemFilter : ItemFilter<ItemData>
     public static ItemFilter<T> LoadFromList<T>(string filterName, IEnumerable<string> list) where T : ItemData
     {
         var compiledQueries = list.Select((query, i) => ItemQuery.Load<T>(query, query, i + 1)).ToList();
-        DebugWindow.LogMsg($@"[ItemQueryProcessor] Processed {filterName.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
+        DebugWindow.LogMsg($"[ItemQueryProcessor] Processed {filterName.Split("\\").LastOrDefault()} with {compiledQueries.Count} queries", 2);
         return new ItemFilter<T>(compiledQueries);
     }
 

@@ -11,8 +11,8 @@ public partial class ItemData
 {
     public sealed class PlayerData
     {
-        private static readonly InventorySlotE[] EquippedSlots = new[]
-        {
+        private static readonly InventorySlotE[] EquippedSlots =
+        [
             InventorySlotE.BodyArmour1,
             InventorySlotE.Weapon1,
             InventorySlotE.Offhand1,
@@ -21,20 +21,20 @@ public partial class ItemData
             InventorySlotE.Boots1,
             InventorySlotE.Amulet1,
             InventorySlotE.Ring1,
-            InventorySlotE.Ring2
-        };
+            InventorySlotE.Ring2,
+        ];
 
-        private readonly List<long> _equippedItemAddresses = new();
-        private readonly List<long> _inventoryItemAddresses = new();
+        private readonly List<long> _equippedItemAddresses = [];
+        private readonly List<long> _inventoryItemAddresses = [];
         public int Level { get; }
         public int Strength { get; }
         public int Dexterity { get; }
         public int Intelligence { get; }
 
-        public List<ItemData> EquippedItems { get; } = new();
-        public List<ItemData> InventoryItems { get; } = new();
-        public List<ItemData> OwnedItems { get; } = new();
-        public List<ItemData> OwnedGems { get; } = new();
+        public List<ItemData> EquippedItems { get; } = [];
+        public List<ItemData> InventoryItems { get; } = [];
+        public List<ItemData> OwnedItems { get; } = [];
+        public List<ItemData> OwnedGems { get; } = [];
 
         public PlayerData(GameController gameController)
         {

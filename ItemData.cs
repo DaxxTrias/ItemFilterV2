@@ -112,9 +112,9 @@ public partial class ItemData
     public bool IsSynthesised { get; } = false;
     public bool Enchanted { get; } = false;
     public ItemRarity Rarity { get; } = ItemRarity.Normal;
-    public List<string> ModsNames { get; } = new List<string>();
-    public List<string> PathTags { get; } = new List<string>();
-    public List<string> Tags { get; } = new List<string>();
+    public List<string> ModsNames { get; } = [];
+    public List<string> PathTags { get; } = [];
+    public List<string> Tags { get; } = [];
     public LabelOnGround LabelOnGround { get; } = null;
     public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, false);
     public uint InventoryId { get; }
@@ -351,8 +351,8 @@ public partial class ItemData
             MapInfo.MoreScarabs = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
             MapInfo.MoreCurrency = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
             MapInfo.Area = mapComp.Area;
-            MapInfo.IsBonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area) ? true : false;
-            MapInfo.IsCompleted = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area) ? true : false;
+            MapInfo.IsBonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area);
+            MapInfo.IsCompleted = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area);
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
@@ -525,12 +525,7 @@ public partial class ItemData
 
     private IReadOnlyDictionary<GameStat, int> ComputeItemStats(IEnumerable<ItemMod> list)
     {
-        if (list == null)
-        {
-            return new DefaultDictionary<GameStat, int>(0);
-        }
-
-        return SumModStats(list);
+        return list == null ? new DefaultDictionary<GameStat, int>(0) : SumModStats(list);
     }
 
     public IReadOnlyDictionary<GameStat, float> ModWeightedStatSum(params (string, float)[] wantedMods)
@@ -584,7 +579,7 @@ public partial class ItemData
 
     private bool CheckAndCacheTags(string cacheKey, Func<bool> checkFunction)
     {
-        if (!_hasTagCache.TryGetValue(cacheKey, out bool result))
+        if (!_hasTagCache.TryGetValue(cacheKey, out var result))
         {
             result = checkFunction();
             _hasTagCache[cacheKey] = result;
