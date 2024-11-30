@@ -1,16 +1,17 @@
-using ExileCore;
-using ExileCore.PoEMemory.Components;
-using ExileCore.PoEMemory.Elements;
-using ExileCore.PoEMemory.FilesInMemory;
-using ExileCore.PoEMemory.MemoryObjects;
-using ExileCore.Shared.Cache;
-using ExileCore.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using ExileCore2;
+using ExileCore2.PoEMemory.Components;
+using ExileCore2.PoEMemory.Elements;
+using ExileCore2.PoEMemory.FilesInMemory;
+using ExileCore2.PoEMemory.MemoryObjects;
+using ExileCore2.Shared.Cache;
+using ExileCore2.Shared.Enums;
+using Map = ExileCore2.PoEMemory.Components.Map;
 
 namespace ItemFilterLibrary;
 
@@ -64,7 +65,7 @@ public partial class ItemData
 
     public record NecropolisCorpseData(NecropolisCraftingMod CraftingMod, MonsterVariety Monster);
 
-    public record SkillGemData(int Level, int MaxLevel, SkillGemQualityTypeE QualityType, bool IsGem);
+    public record SkillGemData(int Level, int MaxLevel, bool IsGem);
 
     public record StackData(int Count, int MaxCount);
 
@@ -115,7 +116,7 @@ public partial class ItemData
     public List<string> PathTags { get; } = new List<string>();
     public List<string> Tags { get; } = new List<string>();
     public LabelOnGround LabelOnGround { get; } = null;
-    public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, SkillGemQualityTypeE.Superior, false);
+    public SkillGemData GemInfo { get; } = new SkillGemData(0, 0, false);
     public uint InventoryId { get; }
     public uint Id { get; }
     public int Height { get; } = 0;
@@ -285,7 +286,7 @@ public partial class ItemData
 
         if (item.TryGetComponent<SkillGem>(out var gemComp))
         {
-            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, gemComp.QualityType, true);
+            GemInfo = new SkillGemData(gemComp.Level, gemComp.MaxLevel, true);
         }
 
         if (item.TryGetComponent<Stack>(out var stackComp))
@@ -293,7 +294,7 @@ public partial class ItemData
             StackInfo = new StackData(stackComp.Size, stackComp.Info.MaxStackSize);
         }
 
-        if (item.TryGetComponent<ExileCore.PoEMemory.Components.Map>(out var mapComp))
+        if (item.TryGetComponent<Map>(out var mapComp))
         {
             MapInfo.Tier = mapComp.Tier;
             MapInfo.IsMap = true;

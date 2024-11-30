@@ -1,11 +1,11 @@
-﻿using ExileCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Linq.Dynamic.Core.Exceptions;
 using System.Linq.Expressions;
+using ExileCore2;
 
 namespace ItemFilterLibrary;
 

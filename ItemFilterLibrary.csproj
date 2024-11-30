@@ -8,20 +8,20 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(SolutionName)' == 'ExileApi'">
-    <OutputPath>..\..\..\PoeHelper</OutputPath>
+  <PropertyGroup Condition="'$(SolutionName)' == 'ExileCore2'">
+    <OutputPath>..\..\..\ExileCore2Compiled</OutputPath>
   </PropertyGroup>
-  <ItemGroup Condition="'$(SolutionName)' == 'ExileApi'">
-    <ProjectReference Include="..\..\GameOffsets\GameOffsets.csproj" />
+  <ItemGroup Condition="'$(SolutionName)' == 'ExileCore2'">
+    <ProjectReference Include="..\..\GameOffsets\GameOffsets2.csproj" />
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(SolutionName)' != 'ExileApi'">
-    <Reference Include="ExileCore">
-      <HintPath>$(exapiPackage)\ExileCore.dll</HintPath>
+  <ItemGroup Condition="'$(SolutionName)' != 'ExileCore2'">
+    <Reference Include="ExileCore2">
+      <HintPath>$(exapiPackage)\ExileCore2.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="GameOffsets">
-      <HintPath>$(exapiPackage)\GameOffsets.dll</HintPath>
+    <Reference Include="GameOffsets2">
+      <HintPath>$(exapiPackage)\GameOffsets2.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
