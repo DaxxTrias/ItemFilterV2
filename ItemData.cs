@@ -35,15 +35,14 @@ public partial class ItemData
         public bool Drox { get; set; } = Drox;
     }
 
-    public class MapTypeData(bool Normal, bool Blighted, bool blightRavaged, bool Uber)
+    public class MapTypeData(bool Normal, bool Blighted, bool blightRavaged)
     {
         public bool Normal { get; set; } = Normal;
         public bool Blighted { get; set; } = Blighted;
         public bool BlightRavaged { get; set; } = blightRavaged;
-        public bool Uber { get; set; } = Uber;
     }
 
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, int MoreMaps, int MoreScarabs, int MoreCurrency, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool IsBonusCompleted, bool IsCompleted, WorldArea Area)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool IsBonusCompleted, bool IsCompleted, WorldArea Area)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -51,9 +50,6 @@ public partial class ItemData
         public int Rarity { get; set; } = Rarity;
         public int PackSize { get; set; } = PackSize;
         public int Quality { get; set; } = Quality;
-        public int MoreMaps { get; set; } = MoreMaps;
-        public int MoreScarabs { get; set; } = MoreScarabs;
-        public int MoreCurrency { get; set; } = MoreCurrency;
         public bool Occupied { get; set; } = Occupied;
         public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
         public MapTypeData Type { get; set; } = Type;
@@ -138,7 +134,7 @@ public partial class ItemData
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
     public ExpeditionSaga ExpeditionInfo { get; } = new ExpeditionSaga();
-    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false, false), false, false, null);
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false), false, false, null);
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -341,15 +337,11 @@ public partial class ItemData
 
             MapInfo.Type.BlightRavaged = itemStats[GameStat.IsUberBlightedMap] == 1;
             MapInfo.Type.Blighted = itemStats[GameStat.IsBlightedMap] == 1;
-            MapInfo.Type.Uber = itemStats[GameStat.MapIsUberMap] == 1;
-            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Type.BlightRavaged && !MapInfo.Occupied && !MapInfo.Type.Uber;
+            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Type.BlightRavaged && !MapInfo.Occupied;
 
             MapInfo.PackSize = itemStats[GameStat.MapPackSizePct];
             MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
             MapInfo.Rarity = itemStats[GameStat.MapItemDropRarityPct];
-            MapInfo.MoreMaps = itemStats[GameStat.MapMapItemDropChancePctFinalFromUberMod];
-            MapInfo.MoreScarabs = itemStats[GameStat.MapScarabDropChancePctFinalFromUberMod];
-            MapInfo.MoreCurrency = itemStats[GameStat.MapCurrencyDropChancePctFinalFromUberMod];
             MapInfo.Area = mapComp.Area;
             MapInfo.IsBonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area);
             MapInfo.IsCompleted = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area);
