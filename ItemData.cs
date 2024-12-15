@@ -19,30 +19,7 @@ public partial class ItemData
 {
     private static readonly ConditionalWeakTable<GameController, CachedValue<PlayerData>> PlayerDataCache = new();
 
-    #region MapInfo
-
-    public class MapOccupationData(bool ElderBoss, bool Enslaver, bool Eradicator, bool Constrictor, bool Purifier, bool ConquerorBoss, bool Baran, bool Veritania, bool AlHezmin, bool Drox)
-    {
-        public bool ElderBoss { get; set; } = ElderBoss;
-        public bool Enslaver { get; set; } = Enslaver;
-        public bool Eradicator { get; set; } = Eradicator;
-        public bool Constrictor { get; set; } = Constrictor;
-        public bool Purifier { get; set; } = Purifier;
-        public bool ConquerorBoss { get; set; } = ConquerorBoss;
-        public bool Baran { get; set; } = Baran;
-        public bool Veritania { get; set; } = Veritania;
-        public bool AlHezmin { get; set; } = AlHezmin;
-        public bool Drox { get; set; } = Drox;
-    }
-
-    public class MapTypeData(bool Normal, bool Blighted, bool blightRavaged)
-    {
-        public bool Normal { get; set; } = Normal;
-        public bool Blighted { get; set; } = Blighted;
-        public bool BlightRavaged { get; set; } = blightRavaged;
-    }
-
-    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality, bool Occupied, MapOccupationData OccupiedBy, MapTypeData Type, bool IsBonusCompleted, bool IsCompleted, WorldArea Area)
+    public class MapData(bool IsMap, int Tier, int Quantity, int Rarity, int PackSize, int Quality)
     {
         public bool IsMap { get; set; } = IsMap;
         public int Tier { get; set; } = Tier;
@@ -50,14 +27,7 @@ public partial class ItemData
         public int Rarity { get; set; } = Rarity;
         public int PackSize { get; set; } = PackSize;
         public int Quality { get; set; } = Quality;
-        public bool Occupied { get; set; } = Occupied;
-        public MapOccupationData OccupiedBy { get; set; } = OccupiedBy;
-        public MapTypeData Type { get; set; } = Type;
-        public bool IsBonusCompleted { get; set; } = IsBonusCompleted;
-        public bool IsCompleted { get; set; } = IsCompleted;
-        public WorldArea Area { get; set; } = Area;
     }
-    #endregion
 
     public record NecropolisCorpseData(NecropolisCraftingMod CraftingMod, MonsterVariety Monster);
 
@@ -134,7 +104,7 @@ public partial class ItemData
     public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
     public ExpeditionSaga ExpeditionInfo { get; } = new ExpeditionSaga();
-    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0, false, new MapOccupationData(false, false, false, false, false, false, false, false, false, false), new MapTypeData(false, false, false), false, false, null);
+    public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0);
 
     public AttackSpeedData AttackSpeed { get; } = new AttackSpeedData(0, 0);
 
@@ -296,55 +266,9 @@ public partial class ItemData
             MapInfo.IsMap = true;
             var itemStats = GetItemStats(ModsInfo.ItemMods);
 
-            #region MapOccupation
-
-            switch (itemStats[GameStat.MapElderBossVariation])
-            {
-                case 1:
-                    MapInfo.OccupiedBy.Enslaver = true;
-                    break;
-                case 2:
-                    MapInfo.OccupiedBy.Eradicator = true;
-                    break;
-                case 3:
-                    MapInfo.OccupiedBy.Constrictor = true;
-                    break;
-                case 4:
-                    MapInfo.OccupiedBy.Purifier = true;
-                    break;
-            }
-
-            switch (itemStats[GameStat.MapContainsCitadel])
-            {
-                case 1:
-                    MapInfo.OccupiedBy.Baran = true;
-                    break;
-                case 2:
-                    MapInfo.OccupiedBy.Veritania = true;
-                    break;
-                case 3:
-                    MapInfo.OccupiedBy.AlHezmin = true;
-                    break;
-                case 4:
-                    MapInfo.OccupiedBy.Drox = true;
-                    break;
-            }
-
-            MapInfo.OccupiedBy.ElderBoss = MapInfo.OccupiedBy.Enslaver || MapInfo.OccupiedBy.Eradicator || MapInfo.OccupiedBy.Constrictor || MapInfo.OccupiedBy.Purifier;
-            MapInfo.OccupiedBy.ConquerorBoss = MapInfo.OccupiedBy.Baran || MapInfo.OccupiedBy.Veritania || MapInfo.OccupiedBy.AlHezmin || MapInfo.OccupiedBy.Drox;
-            MapInfo.Occupied = MapInfo.OccupiedBy.ElderBoss || MapInfo.OccupiedBy.ConquerorBoss;
-            #endregion
-
-            MapInfo.Type.BlightRavaged = itemStats[GameStat.IsUberBlightedMap] == 1;
-            MapInfo.Type.Blighted = itemStats[GameStat.IsBlightedMap] == 1;
-            MapInfo.Type.Normal = !MapInfo.Type.Blighted && !MapInfo.Type.BlightRavaged && !MapInfo.Occupied;
-
             MapInfo.PackSize = itemStats[GameStat.MapPackSizePct];
             MapInfo.Quantity = itemStats[GameStat.MapItemDropQuantityPct];
             MapInfo.Rarity = itemStats[GameStat.MapItemDropRarityPct];
-            MapInfo.Area = mapComp.Area;
-            MapInfo.IsBonusCompleted = GameController.IngameState.ServerData.BonusCompletedAreas.Contains(MapInfo.Area);
-            MapInfo.IsCompleted = GameController.IngameState.ServerData.CompletedAreas.Contains(MapInfo.Area);
         }
 
         if (item.TryGetComponent<HeistContract>(out var heistComp))
