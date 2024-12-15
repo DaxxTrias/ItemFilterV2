@@ -78,9 +78,8 @@ public partial class ItemData
     public record ModsData(IReadOnlyCollection<ItemMod> ItemMods,
         IReadOnlyCollection<ItemMod> EnchantedMods,
         IReadOnlyCollection<ItemMod> ExplicitMods,
-        IReadOnlyCollection<ItemMod> FracturedMods,
+        IReadOnlyCollection<ItemMod> CorruptionImplicitMods,
         IReadOnlyCollection<ItemMod> ImplicitMods,
-        IReadOnlyCollection<ItemMod> ScourgeMods,
         IReadOnlyCollection<ItemMod> SynthesisMods,
         IReadOnlyCollection<ItemMod> CrucibleMods)
     {
@@ -89,9 +88,8 @@ public partial class ItemData
             { ItemMods, "ItemMods" },
             { EnchantedMods, "EnchantedMods" },
             { ExplicitMods, "ExplicitMods" },
-            { FracturedMods, "FracturedMods" },
+            { CorruptionImplicitMods, "CorruptionImplicitMods" },
             { ImplicitMods, "ImplicitMods" },
-            { ScourgeMods, "ScourgeMods" },
             { SynthesisMods, "SynthesisMods" },
             { CrucibleMods, "CrucibleMods" }
         };

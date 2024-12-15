@@ -60,7 +60,6 @@ public partial class ItemData
     public string HeistContractJobType { get; } = string.Empty;
     public int ItemQuality { get; } = 0;
     public int VeiledModCount { get; } = 0;
-    public int FracturedModCount { get; } = 0;
     public int ItemLevel { get; } = 0;
     public int DeliriumStacks { get; } = 0;
     public int HeistContractReqJobLevel { get; } = 0;
@@ -101,7 +100,7 @@ public partial class ItemData
     public FlaskData FlaskInfo { get; } = new FlaskData(0, 0, new Dictionary<GameStat, int>());
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
     public ArmourData ArmourInfo { get; } = new ArmourData(0, 0, 0);
-    public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
+    public ModsData ModsInfo { get; } = new ModsData(new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>(), new List<ItemMod>());
     public AreaData AreaInfo { get; } = new AreaData(0, "N/A", 0, false);
     public ExpeditionSaga ExpeditionInfo { get; } = new ExpeditionSaga();
     public MapData MapInfo { get; set; } = new MapData(false, 0, 0, 0, 0, 0);
@@ -217,11 +216,10 @@ public partial class ItemData
             IsIdentified = modsComp.Identified;
             ItemLevel = modsComp.ItemLevel;
             Name = string.IsNullOrWhiteSpace(modsComp.UniqueName) ? Name : modsComp.UniqueName;
-            FracturedModCount = modsComp.CountFractured;
             IsSynthesised = modsComp.Synthesised;
             Enchanted = modsComp.EnchantedMods?.Count > 0;
 
-            ModsInfo = new ModsData(modsComp.ItemMods, modsComp.EnchantedMods, modsComp.ExplicitMods, modsComp.FracturedMods, modsComp.ImplicitMods, modsComp.ScourgeMods, modsComp.SynthesisMods, modsComp.CrucibleMods);
+            ModsInfo = new ModsData(modsComp.ItemMods, modsComp.EnchantedMods, modsComp.ExplicitMods, modsComp.CorruptionImplicitMods, modsComp.ImplicitMods, modsComp.SynthesisMods, modsComp.CrucibleMods);
             if (IsIdentified)
             {
                 ModsInfo.OpenPrefixCount = Math.Max(0, affixSlots - ModsInfo.Prefixes.Count + ItemStats[GameStat.LocalMaximumPrefixesAllowed]);
