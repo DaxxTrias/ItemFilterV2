@@ -34,7 +34,6 @@ public partial class ItemData
         public List<ItemData> EquippedItems { get; } = [];
         public List<ItemData> InventoryItems { get; } = [];
         public List<ItemData> OwnedItems { get; } = [];
-        public List<ItemData> OwnedGems { get; } = [];
 
         public PlayerData(GameController gameController)
         {
@@ -59,7 +58,6 @@ public partial class ItemData
             _inventoryItemAddresses = inventoryItems.Select(x => x.Address).OrderBy(x => x).ToList();
             InventoryItems = inventoryItems.Select(x => new ItemData(x, gameController)).ToList();
             OwnedItems = EquippedItems.Concat(InventoryItems).ToList();
-            OwnedGems = OwnedItems.Concat(OwnedItems.SelectMany(x => x.SocketInfo.SocketedGems)).Where(x => x.GemInfo.IsGem).ToList();
         }
 
         public bool Equals(PlayerData other)

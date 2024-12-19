@@ -37,7 +37,7 @@ public partial class ItemData
 
     public record ChargesData(int Current, int Max, int PerUse);
 
-    public record SocketData(int LargestLinkSize, int SocketNumber, IReadOnlyCollection<IReadOnlyCollection<int>> Links, IReadOnlyCollection<string> SocketGroups, IReadOnlyCollection<ItemData> SocketedGems);
+    public record SocketData(int SocketNumber, IReadOnlyCollection<ItemData> SocketedItems, List<SocketTypes> SocketList);
 
     public record FlaskData(int LifeRecovery, int ManaRecovery, Dictionary<GameStat, int> Stats);
 
@@ -95,7 +95,7 @@ public partial class ItemData
     public Entity GroundItem { get; }
     public GameController GameController { get; }
     public NecropolisCorpseData CorpseInfo { get; } = new NecropolisCorpseData(new NecropolisCraftingMod(), new MonsterVariety());
-    public SocketData SocketInfo { get; } = new SocketData(0, 0, new List<IReadOnlyCollection<int>>(), new List<string>(), new List<ItemData>());
+    public SocketData SocketInfo { get; } = new SocketData(0, new List<ItemData>(), new List<SocketTypes>());
     public ChargesData ChargeInfo { get; } = new ChargesData(0, 0, 0);
     public FlaskData FlaskInfo { get; } = new FlaskData(0, 0, new Dictionary<GameStat, int>());
     public AttributeRequirementsData AttributeRequirements { get; } = new AttributeRequirementsData(0, 0, 0);
@@ -244,8 +244,8 @@ public partial class ItemData
         {
             // issue to be resolved in core, if a corrupted ring with sockets gets a new implicit it will still have the component but the component logic will throw an exception
             if (socketComp.NumberOfSockets > 0)
-                SocketInfo = new SocketData(socketComp.LargestLinkSize, socketComp.NumberOfSockets, socketComp.Links, socketComp.SocketGroup,
-                    socketComp.SocketedGems.Select(x => new ItemData(x.GemEntity, GameController)).ToList());
+                SocketInfo = new SocketData(socketComp.NumberOfSockets,
+                    socketComp.SocketedItems.Select(x => new ItemData(x.ItemEntity, GameController)).ToList(), socketComp.SocketList);
         }
 
         if (item.TryGetComponent<SkillGem>(out var gemComp))
@@ -373,36 +373,6 @@ public partial class ItemData
     public bool IsUnownedItem(Func<ItemData, bool> criterion) => criterion(this) && !PlayerInfo.OwnedItems.Any(criterion);
 
     public bool IsUnownedGem(Func<ItemData, bool> criterion) => GemInfo.IsGem && criterion(this) && !PlayerInfo.OwnedGems.Any(criterion);
-
-    public bool HasUnorderedSocketGroup(string groupText) => HasUnorderedSocketGroup(groupText, false);
-
-    public bool HasUnorderedSocketGroup(string groupText, bool socketGroupMatch)
-    {
-        return SocketInfo.SocketGroups.Any(x =>
-            (socketGroupMatch ? x.Length == groupText.Length : x.Length >= groupText.Length) &&
-            ParseSocketString(x) is var group &&
-            ParseSocketString(groupText) is var request &&
-            request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites
-        );
-    }
-
-    public bool HasSockets(string socketText) => HasSockets(socketText, false);
-
-    public bool HasSockets(string socketText, bool socketsMatch)
-    {
-        return string.Concat(SocketInfo.SocketGroups) is var sockets &&
-               (socketsMatch ? sockets.Length == socketText.Length : sockets.Length >= socketText.Length) &&
-               ParseSocketString(sockets) is var group &&
-               ParseSocketString(socketText) is var request &&
-               request.Literals.Sum(g => Math.Max(g.Count() - group.Literals[g.Key].Count(), 0)) <= group.Whites - request.Whites;
-    }
-
-    private static (ILookup<char, char> Literals, int Wildcards, int Whites) ParseSocketString(string socketText)
-    {
-        var wildcards = socketText.Count(x => x is '?');
-        var whites = socketText.Count(x => x is 'w' or 'W');
-        return (socketText.Where(x => x is not ('?' or 'w' or 'W')).ToLookup(char.ToLowerInvariant), wildcards, whites);
-    }
 
     public List<ItemMod> FindMods(string wantedMod) => ModsInfo.ItemMods
         .Where(item => item.Name.Contains(wantedMod, StringComparison.OrdinalIgnoreCase)).ToList();
