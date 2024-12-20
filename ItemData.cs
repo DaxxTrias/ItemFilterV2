@@ -372,8 +372,6 @@ public partial class ItemData
 
     public bool IsUnownedItem(Func<ItemData, bool> criterion) => criterion(this) && !PlayerInfo.OwnedItems.Any(criterion);
 
-    public bool IsUnownedGem(Func<ItemData, bool> criterion) => GemInfo.IsGem && criterion(this) && !PlayerInfo.OwnedGems.Any(criterion);
-
     public List<ItemMod> FindMods(string wantedMod) => ModsInfo.ItemMods
         .Where(item => item.Name.Contains(wantedMod, StringComparison.OrdinalIgnoreCase)).ToList();
 
