@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Runtime.CompilerServices;
@@ -142,12 +143,12 @@ public partial class ItemData
 
     public Dictionary<GameStat, int> LocalStats { get; } = new Dictionary<GameStat, int>();
 
-    public ItemData(LabelOnGround queriedItem, GameController gc) :
+    public ItemData(LabelOnGround queriedItem, GameController gc = null) :
         this(queriedItem.ItemOnGround?.GetComponent<WorldItem>()?.ItemEntity, queriedItem.ItemOnGround, gc, queriedItem)
     {
     }
 
-    public ItemData(Entity queriedItem, GameController gc) :
+    public ItemData(Entity queriedItem, GameController gc = null) :
         this(queriedItem, null, gc, null)
     {
     }
@@ -158,6 +159,7 @@ public partial class ItemData
 
     private ItemData(Entity itemEntity, Entity groundItem, GameController gc, LabelOnGround itemLabelOnGround)
     {
+        gc ??= Core.Current?.GameController;
         if (itemEntity == null) return;
         var item = itemEntity;
 
