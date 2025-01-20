@@ -78,8 +78,7 @@ public partial class ItemData
         IReadOnlyCollection<ItemMod> ExplicitMods,
         IReadOnlyCollection<ItemMod> CorruptionImplicitMods,
         IReadOnlyCollection<ItemMod> ImplicitMods,
-        IReadOnlyCollection<ItemMod> SynthesisMods,
-        IReadOnlyCollection<ItemMod> CrucibleMods)
+        IReadOnlyCollection<ItemMod> SynthesisMods)
     {
         public IReadOnlyDictionary<IReadOnlyCollection<ItemMod>, string> ModsDictionary { get; } = new Dictionary<IReadOnlyCollection<ItemMod>, string>
         {
@@ -89,7 +88,6 @@ public partial class ItemData
             { CorruptionImplicitMods, "CorruptionImplicitMods" },
             { ImplicitMods, "ImplicitMods" },
             { SynthesisMods, "SynthesisMods" },
-            { CrucibleMods, "CrucibleMods" }
         };
 
         public IReadOnlyCollection<ItemMod> Prefixes { get; } = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Prefix).ToList();
