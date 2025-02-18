@@ -324,7 +324,7 @@ public partial class ItemData
 
         if (item.TryGetComponent<AttributeRequirements>(out var attributeReqComp))
         {
-            AttributeRequirements = new AttributeRequirementsData(attributeReqComp.strength, attributeReqComp.intelligence, attributeReqComp.dexterity);
+            AttributeRequirements = new AttributeRequirementsData(attributeReqComp.strength, attributeReqComp.dexterity, attributeReqComp.intelligence);
         }
 
         if (item.TryGetComponent<Armour>(out var armourComp))
