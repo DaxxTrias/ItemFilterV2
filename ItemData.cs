@@ -12,6 +12,7 @@ using ExileCore2.PoEMemory.FilesInMemory;
 using ExileCore2.PoEMemory.MemoryObjects;
 using ExileCore2.Shared.Cache;
 using ExileCore2.Shared.Enums;
+using ExileCore2.PoEMemory;
 using Map = ExileCore2.PoEMemory.Components.Map;
 
 namespace ItemFilterLibrary;
@@ -113,23 +114,25 @@ public partial class ItemData
 
     private PlayerData CurrentPlayerData =>
         GameController != null
-            ? PlayerDataCache.GetValue(GameController, gc =>
-            {
-                var updateFunc = CacheUtils.RememberLastValue<PlayerData>(prev =>
-                    (prev, new PlayerData(gc)) switch
-                    {
-                        (null, var @new) => @new,
-                        ({ } old, { } @new) => @new.Equals(old) ? old : @new
-                    });
-                return new TimeCache<PlayerData>(updateFunc, 1000);
-            })!.Value
+            ? PlayerDataCache.GetValue(GameController, PlayerDataCacheProvider)!.Value
             : new PlayerData(GameController);
+
+    private static CachedValue<PlayerData> PlayerDataCacheProvider(GameController gc)
+    {
+        var updateFunc = CacheUtils.RememberLastValue<PlayerData>(prev => (prev, new PlayerData(gc)) switch
+        {
+            (null, var @new) => @new,
+            ({ } old, { } @new) => @new.Equals(old) ? old : @new
+        });
+        return new TimeCache<PlayerData>(updateFunc, 1000);
+    }
 
     private PlayerData _lastPlayerData;
     private bool _wasDynamicallyUpdated;
     private readonly Dictionary<string, IReadOnlyDictionary<GameStat, int>> _statsCache = new();
     private IReadOnlyDictionary<GameStat, int> _itemStatsCache;
 
+    public static PlayerData StaticPlayerData => PlayerDataCache.GetValue(RemoteMemoryObject.GameController, PlayerDataCacheProvider).Value;
     public string ResourcePath { get; } = string.Empty;
 
     public bool WasDynamicallyUpdated
