@@ -61,16 +61,46 @@ public partial class ItemData
             }
 
             var itemsBySlot = gameController.IngameState.ServerData.PlayerInventories.ToLookup(x => x.Inventory.InventSlot, x => x.Inventory.Items);
-            var equippedItems = EquippedSlots.SelectMany(x => itemsBySlot[x].SelectMany(i => i)).ToList();
+            var equippedItems = EquippedSlots.SelectMany(x => itemsBySlot[x].SelectMany(i => i)).Where(IsValidEntityReference).ToList();
             _equippedItemAddresses = equippedItems.Select(x => x.Address).OrderBy(x => x).ToList();
-            EquippedItems = equippedItems.Select(x => new ItemData(x, gameController)).ToList();
-            var offhandItems = OffhandSlots.SelectMany(x => itemsBySlot[x].SelectMany(i => i)).ToList();
+            EquippedItems = CreateSafeItemDataList(equippedItems, gameController);
+            var offhandItems = OffhandSlots.SelectMany(x => itemsBySlot[x].SelectMany(i => i)).Where(IsValidEntityReference).ToList();
             _offhandItemAddresses = offhandItems.Select(x => x.Address).OrderBy(x => x).ToList();
-            OffhandItems = offhandItems.Select(x => new ItemData(x, gameController)).ToList();
-            var inventoryItems = itemsBySlot[InventorySlotE.MainInventory1].SelectMany(x => x).ToList();
+            OffhandItems = CreateSafeItemDataList(offhandItems, gameController);
+            var inventoryItems = itemsBySlot[InventorySlotE.MainInventory1].SelectMany(x => x).Where(IsValidEntityReference).ToList();
             _inventoryItemAddresses = inventoryItems.Select(x => x.Address).OrderBy(x => x).ToList();
-            InventoryItems = inventoryItems.Select(x => new ItemData(x, gameController)).ToList();
+            InventoryItems = CreateSafeItemDataList(inventoryItems, gameController);
             OwnedItems = EquippedItems.Concat(InventoryItems).Concat(OffhandItems).ToList();
+        }
+
+        private static bool IsValidEntityReference(Entity? entity)
+        {
+            try
+            {
+                return entity != null && entity.Address != 0 && entity.IsValid;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static List<ItemData> CreateSafeItemDataList(IEnumerable<Entity> entities, GameController gameController)
+        {
+            var items = new List<ItemData>();
+            foreach (var entity in entities)
+            {
+                try
+                {
+                    items.Add(new ItemData(entity, gameController));
+                }
+                catch
+                {
+                    // A transient/bad entity should not make every PlayerInfo filter fail.
+                }
+            }
+
+            return items;
         }
 
         public bool Equals(PlayerData other)
@@ -82,35 +112,71 @@ public partial class ItemData
                    Dexterity == other.Dexterity &&
                    Intelligence == other.Intelligence &&
                    _equippedItemAddresses.SequenceEqual(other._equippedItemAddresses) &&
-                   _inventoryItemAddresses.SequenceEqual(other._equippedItemAddresses) && 
+                   _inventoryItemAddresses.SequenceEqual(other._inventoryItemAddresses) &&
                    _offhandItemAddresses.SequenceEqual(other._offhandItemAddresses);
         }
     }
 
-    public record ModsData(IReadOnlyCollection<ItemMod> ItemMods,
-        IReadOnlyCollection<ItemMod> EnchantedMods,
-        IReadOnlyCollection<ItemMod> ExplicitMods,
-        IReadOnlyCollection<ItemMod> CorruptionImplicitMods,
-        IReadOnlyCollection<ItemMod> ImplicitMods,
-        IReadOnlyCollection<ItemMod> SynthesisMods)
+    public sealed class ModsData
     {
-        public IReadOnlyDictionary<IReadOnlyCollection<ItemMod>, string> ModsDictionary { get; } = new Dictionary<IReadOnlyCollection<ItemMod>, string>
+        public ModsData(IReadOnlyCollection<ItemMod>? itemMods,
+            IReadOnlyCollection<ItemMod>? enchantedMods,
+            IReadOnlyCollection<ItemMod>? explicitMods,
+            IReadOnlyCollection<ItemMod>? corruptionImplicitMods,
+            IReadOnlyCollection<ItemMod>? implicitMods,
+            IReadOnlyCollection<ItemMod>? synthesisMods)
         {
-            { ItemMods, "ItemMods" },
-            { EnchantedMods, "EnchantedMods" },
-            { ExplicitMods, "ExplicitMods" },
-            { CorruptionImplicitMods, "CorruptionImplicitMods" },
-            { ImplicitMods, "ImplicitMods" },
-            { SynthesisMods, "SynthesisMods" },
-        };
+            ItemMods = SanitizeMods(itemMods);
+            EnchantedMods = SanitizeMods(enchantedMods);
+            ExplicitMods = SanitizeMods(explicitMods);
+            CorruptionImplicitMods = SanitizeMods(corruptionImplicitMods);
+            ImplicitMods = SanitizeMods(implicitMods);
+            SynthesisMods = SanitizeMods(synthesisMods);
 
-        public IReadOnlyCollection<ItemMod> Prefixes { get; } = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Prefix).ToList();
-        public IReadOnlyCollection<ItemMod> Suffixes { get; } = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Suffix).ToList();
+            ModsDictionary = new Dictionary<IReadOnlyCollection<ItemMod>, string>
+            {
+                { ItemMods, "ItemMods" },
+                { EnchantedMods, "EnchantedMods" },
+                { ExplicitMods, "ExplicitMods" },
+                { CorruptionImplicitMods, "CorruptionImplicitMods" },
+                { ImplicitMods, "ImplicitMods" },
+                { SynthesisMods, "SynthesisMods" },
+            };
+
+            Prefixes = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Prefix).ToList();
+            Suffixes = ExplicitMods.Where(m => m.ModRecord.AffixType == ModType.Suffix).ToList();
+        }
+
+        public IReadOnlyCollection<ItemMod> ItemMods { get; }
+        public IReadOnlyCollection<ItemMod> EnchantedMods { get; }
+        public IReadOnlyCollection<ItemMod> ExplicitMods { get; }
+        public IReadOnlyCollection<ItemMod> CorruptionImplicitMods { get; }
+        public IReadOnlyCollection<ItemMod> ImplicitMods { get; }
+        public IReadOnlyCollection<ItemMod> SynthesisMods { get; }
+        public IReadOnlyDictionary<IReadOnlyCollection<ItemMod>, string> ModsDictionary { get; }
+
+        public IReadOnlyCollection<ItemMod> Prefixes { get; }
+        public IReadOnlyCollection<ItemMod> Suffixes { get; }
         public int MaxAllowedPrefixCount { get; set; } = -1;
         public int MaxAllowedSuffixCount { get; set; } = -1;
         public int OpenPrefixCount { get; set; } = -1;
         public int OpenSuffixCount { get; set; } = -1;
         public bool HasOpenPrefix { get; set; } = false;
         public bool HasOpenSuffix { get; set; } = false;
+
+        private static IReadOnlyCollection<ItemMod> SanitizeMods(IEnumerable<ItemMod>? mods)
+        {
+            if (mods == null)
+                return [];
+
+            try
+            {
+                return mods.Where(m => m?.ModRecord != null).ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
     }
 }

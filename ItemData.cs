@@ -265,9 +265,9 @@ public partial class ItemData
                 ModsInfo.HasOpenPrefix = ModsInfo.OpenPrefixCount > 0;
                 ModsInfo.HasOpenSuffix = ModsInfo.OpenSuffixCount > 0;
             }
-            ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name).ToList();
-            VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName.Contains("Veil"));
-            DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name.Contains("AfflictionMapReward"));
+            ModsNames = ModsInfo.ItemMods.Select(mod => mod.Name ?? string.Empty).ToList();
+            VeiledModCount = ModsInfo.ItemMods.Count(m => m.DisplayName?.Contains("Veil") == true);
+            DeliriumStacks = ModsInfo.ItemMods.Count(m => m.Name?.Contains("AfflictionMapReward") == true);
         }
 
         if (item.TryGetComponent<Sockets>(out var socketComp))
@@ -432,7 +432,7 @@ public partial class ItemData
 
     public bool HasAnyModSet(IEnumerable<ItemMod> mods, string[][] sets)
     {
-        return sets.Any(set => set.All(modName => mods.Any(mod => mod.RawName.Equals(modName, StringComparison.OrdinalIgnoreCase))));
+        return sets.Any(set => set.All(modName => mods.Any(mod => mod.RawName?.Equals(modName, StringComparison.OrdinalIgnoreCase) == true)));
     }
 
     public bool HasAnyMatchingConditionSet(bool[][] sets) => sets.Any(set => set.All(condition => condition));
@@ -513,8 +513,8 @@ public partial class ItemData
 
     public static IReadOnlyDictionary<GameStat, int> SumModStats(IEnumerable<ItemMod> mods)
     {
-        return new DefaultDictionary<GameStat, int>(mods
-            .SelectMany(x => x.ModRecord.StatNames.Zip(x.Values, (name, value) => (name.MatchingStat, value)))
+        return new DefaultDictionary<GameStat, int>((mods ?? [])
+            .SelectMany(GetSafeModStatValues)
             .GroupBy(x => x.MatchingStat, x => x.value, (stat, values) => (stat, values.Sum()))
             .ToDictionary(x => x.stat, x => x.Item2), 0);
     }
@@ -524,14 +524,42 @@ public partial class ItemData
 
     public static IReadOnlyDictionary<GameStat, float> SumModStats(IEnumerable<(ItemMod mod, float weight)> mods)
     {
-        return new DefaultDictionary<GameStat, float>(mods
-            .SelectMany(x => x.mod.ModRecord.StatNames.Zip(x.mod.Values, (name, value) => (name.MatchingStat, value: value * x.weight)))
+        return new DefaultDictionary<GameStat, float>((mods ?? [])
+            .SelectMany(GetSafeWeightedModStatValues)
             .GroupBy(x => x.MatchingStat, x => x.value, (stat, values) => (stat, values.Sum()))
             .ToDictionary(x => x.stat, x => x.Item2), 0);
     }
 
     public static IReadOnlyDictionary<GameStat, float> SumModStats(params (ItemMod mod, float weight)[] mods) =>
         SumModStats((IEnumerable<(ItemMod mod, float weight)>)mods);
+
+    private static IEnumerable<(GameStat MatchingStat, int value)> GetSafeModStatValues(ItemMod? mod)
+    {
+        var statNames = mod?.ModRecord?.StatNames;
+        var values = mod?.Values;
+        if (statNames == null || values == null)
+            yield break;
+
+        foreach (var (name, value) in statNames.Zip(values, (name, value) => (name, value)))
+        {
+            if (name != null)
+                yield return (name.MatchingStat, value);
+        }
+    }
+
+    private static IEnumerable<(GameStat MatchingStat, float value)> GetSafeWeightedModStatValues((ItemMod mod, float weight) weightedMod)
+    {
+        var statNames = weightedMod.mod?.ModRecord?.StatNames;
+        var values = weightedMod.mod?.Values;
+        if (statNames == null || values == null)
+            yield break;
+
+        foreach (var (name, value) in statNames.Zip(values, (name, value) => (name, value)))
+        {
+            if (name != null)
+                yield return (name.MatchingStat, value * weightedMod.weight);
+        }
+    }
 
     private bool CheckAndCacheTags(string cacheKey, Func<bool> checkFunction)
     {
